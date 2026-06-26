@@ -140,6 +140,15 @@ export class GameScene extends Phaser.Scene {
   private movePtrId: number | null = null;
   private firePtr:  number | null = null;   // pointer ID holding FIRE in multitouch
 
+  // ── Touch tracking (relative movement, no teleport) ───────────────────────
+  private lastPointerX = 0;
+  private lastPointerY = 0;
+
+  // ── Stored handler refs for explicit removal in SHUTDOWN ──────────────────
+  private onPointerDown!: (ptr: Phaser.Input.Pointer) => void;
+  private onPointerMove!: (ptr: Phaser.Input.Pointer) => void;
+  private onPointerUp!:   (ptr: Phaser.Input.Pointer) => void;
+
   constructor() {
     super("GameScene");
   }
@@ -173,6 +182,8 @@ export class GameScene extends Phaser.Scene {
     this.shootBtnDown = false;
     this.firePtr      = null;
     this.movePtrId    = null;
+    this.lastPointerX = 0;
+    this.lastPointerY = 0;
     this.isPointerOverUI = false;
     this.tutorialPanel = [];
     this.shieldActive = false;
@@ -275,45 +286,59 @@ export class GameScene extends Phaser.Scene {
     this.keySpace = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // ── Touch / pointer movement + FIRE ──────────────────────────────────
-    // Each pointer is identified by ptr.id so two simultaneous touches
-    // (one sliding the ship, one holding FIRE) work independently.
-    // isPointerOverUI blocks PAUSE and MUTE from also triggering movement.
-    this.input.on("pointerdown", (ptr: Phaser.Input.Pointer) => {
+    // Only touch pointers (ptr.wasTouch === true) drive ship movement.
+    // Mouse clicks and drags are excluded: PC users control the ship
+    // exclusively with A / D / arrow keys.
+    // Handler references are stored so SHUTDOWN can call input.off() explicitly.
+
+    this.onPointerDown = (ptr: Phaser.Input.Pointer) => {
       if (!this.gameStarted || this.gameOver || this.paused) return;
       if (this.isPointerOverUI) return;
       const dx = ptr.x - this.shootBtnBounds.cx;
       const dy = ptr.y - this.shootBtnBounds.cy;
       if (dx * dx + dy * dy <= this.shootBtnBounds.r * this.shootBtnBounds.r) {
-        // Touch is inside the FIRE button area — set FIRE state and attempt
-        // an immediate shot; update() continues firing while held.
         this.shootBtnDown = true;
         this.firePtr      = ptr.id;
         this.fireBurst();
         return;
       }
-      // Only capture movement if no finger is already tracking it; prevents
-      // a second finger on the movement area from stealing movePtrId.
+      // Mouse pointers must not capture movement — touch only.
+      if (!ptr.wasTouch) return;
       if (this.movePtrId === null) {
-        this.movePtrId = ptr.id;
-        this.movePlayerTo(ptr.x);
+        this.movePtrId    = ptr.id;
+        this.lastPointerX = ptr.x;
+        this.lastPointerY = ptr.y;
       }
-    });
+    };
 
-    this.input.on("pointermove", (ptr: Phaser.Input.Pointer) => {
+    this.onPointerMove = (ptr: Phaser.Input.Pointer) => {
       if (!this.gameStarted || this.gameOver || this.paused || !ptr.isDown) return;
-      if (ptr.id !== this.movePtrId) return;
-      this.movePlayerTo(ptr.x);
-    });
+      if (ptr.id !== this.movePtrId || !ptr.wasTouch) return;
+      this.player.x    += ptr.x - this.lastPointerX;
+      this.player.y    += ptr.y - this.lastPointerY;
+      this.lastPointerX = ptr.x;
+      this.lastPointerY = ptr.y;
+      this.keepPlayerInsideScreen();
+      this.syncHitboxes();
+    };
 
-    const releasePointer = (ptr: Phaser.Input.Pointer) => {
-      if (ptr.id === this.movePtrId) this.movePtrId = null;
+    this.onPointerUp = (ptr: Phaser.Input.Pointer) => {
+      if (ptr.id === this.movePtrId) {
+        this.movePtrId    = null;
+        this.lastPointerX = 0;
+        this.lastPointerY = 0;
+      }
       if (ptr.id === this.firePtr) {
         this.shootBtnDown = false;
         this.firePtr      = null;
       }
     };
-    this.input.on("pointerup",     releasePointer);
-    this.input.on("pointercancel", releasePointer);
+
+    this.input.on("pointerdown",      this.onPointerDown);
+    this.input.on("pointermove",      this.onPointerMove);
+    this.input.on("pointerup",        this.onPointerUp);
+    this.input.on("pointercancel",    this.onPointerUp);
+    this.input.on("pointerupoutside", this.onPointerUp);
 
     // ── Physics overlaps ──────────────────────────────────────────────────
     this.physics.add.overlap(
@@ -372,6 +397,20 @@ export class GameScene extends Phaser.Scene {
 
     // ── Scene cleanup (registered once per run) ───────────────────────────
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      // Explicit pointer listener removal — does not rely solely on Phaser's
+      // implicit cleanup so the removal is verifiable and order-independent.
+      this.input.off("pointerdown",      this.onPointerDown);
+      this.input.off("pointermove",      this.onPointerMove);
+      this.input.off("pointerup",        this.onPointerUp);
+      this.input.off("pointercancel",    this.onPointerUp);
+      this.input.off("pointerupoutside", this.onPointerUp);
+      // Reset pointer state
+      this.movePtrId    = null;
+      this.firePtr      = null;
+      this.lastPointerX = 0;
+      this.lastPointerY = 0;
+      this.shootBtnDown = false;
+      // Object cleanup
       this.thruster?.destroy();
       this.thruster = null;
       this.tutorialPanel.forEach((obj) => {
@@ -379,8 +418,6 @@ export class GameScene extends Phaser.Scene {
         if (obj.active) obj.destroy();
       });
       this.tutorialPanel = [];
-      this.shootBtnDown = false;
-      this.firePtr      = null;
       this.cancelAllShieldState();
     });
 
@@ -981,17 +1018,13 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // ─── Player movement ───────────────────────────────────────────────────────
-
-  private movePlayerTo(pointerX: number): void {
-    this.player.x = pointerX;
-    this.keepPlayerInsideScreen();
-    this.syncHitboxes();
-  }
+  // ─── Player bounds ─────────────────────────────────────────────────────────
 
   private keepPlayerInsideScreen(): void {
-    const half = this.player.displayWidth / 2;
-    this.player.x = Phaser.Math.Clamp(this.player.x, half, this.scale.width - half);
+    const halfW = this.player.displayWidth  / 2;
+    const halfH = this.player.displayHeight / 2;
+    this.player.x = Phaser.Math.Clamp(this.player.x, halfW, this.scale.width  - halfW);
+    this.player.y = Phaser.Math.Clamp(this.player.y, 140 + halfH, this.scale.height - 100);
   }
 
   // ─── Hitbox sync ───────────────────────────────────────────────────────────
