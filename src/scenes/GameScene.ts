@@ -11,6 +11,8 @@ import { CAMERA_SHAKE } from "../config/cameraEffectsConfig";
 import { SHIELD_CONFIG } from "../config/shieldConfig";
 import { ThrusterEffect } from "../effects/ThrusterEffect";
 import { SoundEffectsManager } from "../services/SoundEffectsManager";
+import { getSuraService } from "../integration/sura/SuraIntegrationService";
+import type { SuraServiceEvent, SuraServiceListener } from "../integration/sura/SuraTypes";
 
 // ─── Player multi-part hitbox config ──────────────────────────────────────────
 // Adjusted for the armed ship (nave_penguino_armada.png) with cannon pods.
@@ -149,6 +151,13 @@ export class GameScene extends Phaser.Scene {
   private onPointerMove!: (ptr: Phaser.Input.Pointer) => void;
   private onPointerUp!:   (ptr: Phaser.Input.Pointer) => void;
 
+  // ── SURA host-pause state ─────────────────────────────────────────────────
+  // Tracked separately from the player-triggered pause so that
+  // SURA_MINIGAME_RESUME only lifts the host pause, never a manual pause.
+  private hostPauseActive    = false;
+  private playerManuallyPaused = false;
+  private onSuraEvent: SuraServiceListener | null = null;
+
   constructor() {
     super("GameScene");
   }
@@ -186,6 +195,9 @@ export class GameScene extends Phaser.Scene {
     this.lastPointerY = 0;
     this.isPointerOverUI = false;
     this.tutorialPanel = [];
+    this.hostPauseActive     = false;
+    this.playerManuallyPaused = false;
+    this.onSuraEvent          = null;
     this.shieldActive = false;
     this.shieldGraceUntil = 0;
     this.pickupSprite = null;
@@ -395,8 +407,29 @@ export class GameScene extends Phaser.Scene {
       console.warn("[MusicManager] Could not start game music:", err);
     }
 
+    // ── SURA host-pause / resume subscription ────────────────────────────
+    try {
+      const service = getSuraService();
+      if (service.mode !== "standalone") {
+        this.onSuraEvent = (event: SuraServiceEvent) => {
+          if (event.type === "host-pause")  this.onHostPause();
+          if (event.type === "host-resume") this.onHostResume();
+        };
+        service.subscribe(this.onSuraEvent);
+      }
+    } catch {
+      // Service not initialised (standalone) — skip silently.
+    }
+
     // ── Scene cleanup (registered once per run) ───────────────────────────
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      // SURA subscription cleanup
+      if (this.onSuraEvent) {
+        try { getSuraService().unsubscribe(this.onSuraEvent); } catch { /* ok */ }
+        this.onSuraEvent = null;
+      }
+      this.hostPauseActive      = false;
+      this.playerManuallyPaused = false;
       // Explicit pointer listener removal — does not rely solely on Phaser's
       // implicit cleanup so the removal is verifiable and order-independent.
       this.input.off("pointerdown",      this.onPointerDown);
@@ -524,7 +557,29 @@ export class GameScene extends Phaser.Scene {
 
   private togglePause(): void {
     if (!this.gameStarted || this.gameOver) return;
-    this.paused ? this.resumeGame() : this.pauseGame();
+    if (this.paused) {
+      // Player cannot lift a host-triggered pause.
+      if (!this.hostPauseActive) {
+        this.playerManuallyPaused = false;
+        this.resumeGame();
+      }
+    } else {
+      this.playerManuallyPaused = true;
+      this.pauseGame();
+    }
+  }
+
+  private onHostPause(): void {
+    if (this.hostPauseActive) return; // no stacking
+    this.hostPauseActive = true;
+    if (!this.paused) this.pauseGame();
+  }
+
+  private onHostResume(): void {
+    if (!this.hostPauseActive) return;
+    this.hostPauseActive = false;
+    // Only lift the pause if the player has NOT independently paused as well.
+    if (this.paused && !this.playerManuallyPaused) this.resumeGame();
   }
 
   private pauseGame(): void {

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SURA Test Host — Pengu Rush</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #0a0f1e;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      color: #22d3ee;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+    h1 span { color: #94a3b8; font-weight: 400; font-size: 0.85rem; }
+
+    .layout {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* ── Game iframe ──────────────────────────────────────────── */
+    .game-wrap {
+      flex: 0 0 auto;
+      border: 2px solid #1e40af;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+    #game-frame {
+      display: block;
+      width: 360px;
+      height: 640px;
+      border: none;
+    }
+
+    /* ── Control panel ────────────────────────────────────────── */
+    .panel {
+      flex: 1 1 280px;
+      min-width: 280px;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section {
+      background: #0f172a;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .section h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 3px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 5px;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      padding: 6px 8px;
+      margin-bottom: 8px;
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: #22d3ee;
+    }
+
+    button {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      transition: opacity 0.15s;
+      margin-bottom: 6px;
+    }
+    button:last-child { margin-bottom: 0; }
+    button:hover { opacity: 0.82; }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-primary  { background: #0e7490; color: #fff; }
+    .btn-warn     { background: #b45309; color: #fff; }
+    .btn-danger   { background: #991b1b; color: #fff; }
+    .btn-neutral  { background: #1e3a5f; color: #e2e8f0; border: 1px solid #3b5a8a; }
+
+    /* ── Event log ────────────────────────────────────────────── */
+    #log {
+      background: #050a14;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 8px;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 0.72rem;
+      color: #94a3b8;
+      height: 220px;
+      overflow-y: auto;
+      word-break: break-all;
+    }
+    #log .msg-in   { color: #22d3ee; }
+    #log .msg-out  { color: #a3e635; }
+    #log .msg-info { color: #64748b; }
+    #log .msg-warn { color: #fbbf24; }
+
+    #game-state {
+      font-size: 0.78rem;
+      color: #22d3ee;
+      min-height: 1.2em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SURA Test Host &nbsp;<span>— Pengu Rush mock integration</span></h1>
+
+<div class="layout">
+
+  <!-- ── Game iframe ──────────────────────────────────────────── -->
+  <div class="game-wrap">
+    <!-- src is set via JS AFTER the message listener is registered -->
+    <iframe id="game-frame" title="Pengu Rush"></iframe>
+  </div>
+
+  <!-- ── Control panel ──────────────────────────────────────────── -->
+  <div class="panel">
+
+    <!-- Session config -->
+    <div class="section">
+      <h2>Sesión de prueba</h2>
+
+      <label for="token-select">Token de prueba</label>
+      <select id="token-select">
+        <option value="mock-valid-token">mock-valid-token ✓ (válido)</option>
+        <option value="mock-invalid-token">mock-invalid-token ✗ (401)</option>
+        <option value="mock-expired-token">mock-expired-token ✗ (403)</option>
+        <option value="mock-network-error">mock-network-error ✗ (red)</option>
+      </select>
+
+      <label for="session-id">session_id</label>
+      <input type="text" id="session-id" value="test-session-001" />
+
+      <label for="player-id">player_id</label>
+      <input type="text" id="player-id" value="42" />
+
+      <label for="game-id">game_id</label>
+      <input type="text" id="game-id" value="pengu_rush" />
+
+      <label for="nickname">nickname (opcional)</label>
+      <input type="text" id="nickname" value="TesterPengu" />
+
+      <button class="btn-primary" id="btn-send-init">ENVIAR SURA_MINIGAME_INIT</button>
+      <button class="btn-neutral" id="btn-new-session">NUEVA SESIÓN DE PRUEBA</button>
+    </div>
+
+    <!-- Game controls -->
+    <div class="section">
+      <h2>Control del juego</h2>
+      <button class="btn-warn"    id="btn-pause">ENVIAR PAUSA</button>
+      <button class="btn-neutral" id="btn-resume">ENVIAR RESUME</button>
+      <button class="btn-danger"  id="btn-reload">RECARGAR IFRAME</button>
+    </div>
+
+    <!-- Status & log -->
+    <div class="section">
+      <h2>Estado del juego</h2>
+      <div id="game-state">Esperando MINIGAME_READY...</div>
+    </div>
+
+    <div class="section">
+      <h2>Eventos <button class="btn-neutral" id="btn-clear-log" style="width:auto;padding:2px 8px;font-size:0.72rem;margin:0 0 0 8px;">limpiar</button></h2>
+      <div id="log"></div>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /layout -->
+
+<script>
+  "use strict";
+
+  const frame    = document.getElementById("game-frame");
+  const log      = document.getElementById("log");
+  const stateLbl = document.getElementById("game-state");
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function logLine(text, cls) {
+    const d  = new Date();
+    const ts = d.toTimeString().slice(0, 8);
+    const el = document.createElement("div");
+    el.className = cls || "msg-info";
+    el.textContent = `[${ts}] ${text}`;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function sendToGame(type, payload) {
+    if (!frame.contentWindow) { logLine("iframe no disponible", "msg-warn"); return; }
+    const envelope = { source: "sura-minigames", version: 1, type, payload: payload || {} };
+    frame.contentWindow.postMessage(envelope, window.location.origin);
+    logLine(`→ SENT  ${type}  ${JSON.stringify(payload || {})}`, "msg-out");
+  }
+
+  function buildInitPayload() {
+    return {
+      token:      document.getElementById("token-select").value,
+      session_id: document.getElementById("session-id").value || "test-session-001",
+      player_id:  parseInt(document.getElementById("player-id").value, 10) || 42,
+      game_id:    document.getElementById("game-id").value || "pengu_rush",
+      nickname:   document.getElementById("nickname").value || undefined,
+    };
+  }
+
+  function incrementSessionId() {
+    const el = document.getElementById("session-id");
+    const m  = el.value.match(/^(.*?)(\d+)$/);
+    if (m) {
+      el.value = m[1] + (parseInt(m[2], 10) + 1);
+    } else {
+      el.value = el.value + "-2";
+    }
+  }
+
+  // ── Inbound message listener (registered BEFORE setting iframe src) ────
+  window.addEventListener("message", function(event) {
+    if (event.source !== frame.contentWindow) return;
+    if (event.origin !== window.location.origin) return;
+
+    var data = event.data;
+    if (!data || data.source !== "sura-minigames" || data.version !== 1) return;
+
+    var type    = data.type    || "?";
+    var payload = data.payload || {};
+    logLine(`← RECV  ${type}  ${JSON.stringify(payload)}`, "msg-in");
+
+    switch (type) {
+      case "MINIGAME_READY":
+        stateLbl.textContent = "Juego listo — enviá INIT para comenzar";
+        stateLbl.style.color = "#22d3ee";
+        break;
+      case "MINIGAME_SESSION_ACCEPTED":
+        stateLbl.textContent = "Sesión aceptada — validando...";
+        stateLbl.style.color = "#7ec8e3";
+        break;
+      case "MINIGAME_STARTED":
+        stateLbl.textContent = "Partida en curso";
+        stateLbl.style.color = "#4ade80";
+        break;
+      case "MINIGAME_COMPLETED":
+        stateLbl.textContent = "Partida completada — puntaje: " + (payload.score ?? "?");
+        stateLbl.style.color = "#f59e0b";
+        break;
+      case "MINIGAME_ERROR":
+        stateLbl.textContent = "Error: " + (payload.message || "desconocido");
+        stateLbl.style.color = "#f87171";
+        break;
+      case "MINIGAME_EXIT_REQUESTED":
+        stateLbl.textContent = "El juego solicitó salir (VOLVER A SURA)";
+        stateLbl.style.color = "#c084fc";
+        break;
+    }
+  });
+
+  // ── Set iframe src NOW (after listener is ready) ───────────────────────
+  frame.src = "/?sura_mode=mock";
+  logLine("iframe cargando: /?sura_mode=mock", "msg-info");
+
+  // ── Button handlers ───────────────────────────────────────────────────
+  document.getElementById("btn-send-init").addEventListener("click", function() {
+    sendToGame("SURA_MINIGAME_INIT", buildInitPayload());
+  });
+
+  document.getElementById("btn-new-session").addEventListener("click", function() {
+    incrementSessionId();
+    sendToGame("SURA_MINIGAME_INIT", buildInitPayload());
+    logLine("Nueva sesión enviada (session_id incrementado)", "msg-info");
+  });
+
+  document.getElementById("btn-pause").addEventListener("click", function() {
+    sendToGame("SURA_MINIGAME_PAUSE", {});
+  });
+
+  document.getElementById("btn-resume").addEventListener("click", function() {
+    sendToGame("SURA_MINIGAME_RESUME", {});
+  });
+
+  document.getElementById("btn-reload").addEventListener("click", function() {
+    logLine("Recargando iframe...", "msg-warn");
+    stateLbl.textContent = "Esperando MINIGAME_READY...";
+    stateLbl.style.color = "#22d3ee";
+    frame.src = "/?sura_mode=mock";
+  });
+
+  document.getElementById("btn-clear-log").addEventListener("click", function() {
+    log.innerHTML = "";
+  });
+</script>
+</body>
+</html>
