@@ -15,6 +15,9 @@ dist-ssr
 !.env.example
 *.local
 
+# Delivery artifact — built locally for handoff, never versioned
+pengu-rush-*-sura-build.zip
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

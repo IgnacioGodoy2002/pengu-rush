@@ -19,19 +19,19 @@ export type SoundEffectKey =
 // Asset paths — used in BootScene preload (currently commented out).
 // When a file is added to public/audio/sfx/, uncomment the matching line in BootScene.
 export const SFX_PATHS: Record<SoundEffectKey, string> = {
-  "sfx-shot":           "/audio/sfx/disparo.ogg",
-  "sfx-hit":            "/audio/sfx/impacto.ogg",
-  "sfx-destroy-small":  "/audio/sfx/destruccion-chico.ogg",
-  "sfx-destroy-medium": "/audio/sfx/destruccion-mediano.ogg",
-  "sfx-destroy-large":  "/audio/sfx/destruccion-grande.ogg",
-  "sfx-player-crash":   "/audio/sfx/choque.ogg",
-  "sfx-click":          "/audio/sfx/click.ogg",
-  "sfx-countdown":      "/audio/sfx/countdown-beep.ogg",
-  "sfx-countdown-go":   "/audio/sfx/countdown-go.ogg",
-  "sfx-new-record":     "/audio/sfx/nuevo-record.ogg",
-  "sfx-shield-pickup":  "/audio/sfx/escudo-recoger.ogg",
-  "sfx-shield-absorb":  "/audio/sfx/escudo-absorber.ogg",
-  "sfx-shield-expire":  "/audio/sfx/escudo-expirar.ogg",
+  "sfx-shot":           "audio/sfx/disparo.ogg",
+  "sfx-hit":            "audio/sfx/impacto.ogg",
+  "sfx-destroy-small":  "audio/sfx/destruccion-chico.ogg",
+  "sfx-destroy-medium": "audio/sfx/destruccion-mediano.ogg",
+  "sfx-destroy-large":  "audio/sfx/destruccion-grande.ogg",
+  "sfx-player-crash":   "audio/sfx/choque.ogg",
+  "sfx-click":          "audio/sfx/click.ogg",
+  "sfx-countdown":      "audio/sfx/countdown-beep.ogg",
+  "sfx-countdown-go":   "audio/sfx/countdown-go.ogg",
+  "sfx-new-record":     "audio/sfx/nuevo-record.ogg",
+  "sfx-shield-pickup":  "audio/sfx/escudo-recoger.ogg",
+  "sfx-shield-absorb":  "audio/sfx/escudo-absorber.ogg",
+  "sfx-shield-expire":  "audio/sfx/escudo-expirar.ogg",
 };
 
 // Volume per effect. Single source of truth — do not hardcode volumes at call sites.
