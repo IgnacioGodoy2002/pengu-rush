@@ -9,26 +9,21 @@ import {
 } from "./SuraTypes";
 import { SURA_CONFIG } from "./SuraRuntimeConfig";
 import { SuraBridge } from "./SuraBridge";
-import type { ISuraApiClient } from "./SuraApiClient";
-import { RealSuraApiClient } from "./SuraApiClient";
-import { MockSuraApiClient } from "./MockSuraApiClient";
 
-// ─── State machine ────────────────────────────────────────────────────────────
+// ─── State machine (parent-submit flow) ──────────────────────────────────────
 //
-// disabled        → (standalone, no transitions)
-// waiting-context → validating     (received SURA_MINIGAME_INIT)
-// validating      → ready          (validateSession succeeded)
-// validating      → unauthorized   (401 / 403)
-// validating      → error          (network / unexpected error)
-// ready           → starting       (startGameSession called)
-// starting        → playing        (startSession succeeded)
-// starting        → unauthorized   (401 / 403)
-// starting        → error          (network error)
-// playing         → completing     (completeGameSession called)
-// completing      → completed      (completeSession succeeded)
-// completing      → error          (network error)
-// error           → completing     (retry via completeGameSession)
-// error / unauthorized / completed → validating  (new INIT received)
+// disabled        → (standalone — no bridge, no transitions)
+// waiting-context → ready        (received valid SURA_MINIGAME_INIT)
+// ready           → playing      (startGameSession called — STARTED sent)
+// playing         → completed    (completeGameSession called — COMPLETED sent)
+// completed       → ready        (new SURA_MINIGAME_INIT received)
+// waiting-context
+//   | ready
+//   | completed    → error       (invalid INIT payload received)
+//
+// Parent-submit model: the game communicates ONLY via postMessage.
+// No HTTP calls are made from the game. Score persistence is handled
+// by the SURA host after it receives MINIGAME_COMPLETED.
 
 // ─── Singleton ────────────────────────────────────────────────────────────────
 
@@ -53,16 +48,13 @@ export function getSuraService(): SuraIntegrationService {
 export class SuraIntegrationService {
   private state: SuraIntegrationState;
   private readonly bridge: SuraBridge;
-  private readonly client: ISuraApiClient | null;
   private context:  SuraSessionContext | null = null;
-  private lastResult: GameResult | null = null;
   private readonly subscribers = new Set<SuraServiceListener>();
   private initialised = false;
 
   constructor() {
     this.state  = SURA_CONFIG.mode === "standalone" ? "disabled" : "waiting-context";
     this.bridge = new SuraBridge(SURA_CONFIG);
-    this.client = this.buildClient();
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────
@@ -102,76 +94,47 @@ export class SuraIntegrationService {
 
   /**
    * Called from MenuScene before transitioning to GameScene.
-   * In standalone mode returns true immediately.
-   * In sura/sura-mock mode calls the API and resolves true only on success.
+   *
+   * Standalone: returns true immediately.
+   * SURA (parent-submit): sends MINIGAME_STARTED, transitions to "playing".
    */
   async startGameSession(): Promise<boolean> {
     if (SURA_CONFIG.mode === "standalone") return true;
     if (this.state !== "ready") return false;
-    if (!this.client || !this.context) return false;
+    if (!this.context) return false;
 
-    this.setState("starting");
-
-    try {
-      const response = await this.client.startSession(this.context);
-      if (!response.success) {
-        const isAuthError = response.message.includes("401") || response.message.includes("403");
-        this.setState(isAuthError ? "unauthorized" : "error");
-        return false;
-      }
-      this.setState("playing");
-      this.bridge.sendToParent(SURA_MSG.STARTED, {
-        session_id: this.context.sessionId,
-        game_id:    this.context.gameId,
-      });
-      return true;
-    } catch {
-      this.setState("error");
-      return false;
-    }
+    this.setState("playing");
+    this.bridge.sendToParent(SURA_MSG.STARTED, {
+      session_id: this.context.sessionId,
+      game_id:    this.context.gameId,
+    });
+    return true;
   }
 
   /**
-   * Called from GameOverScene to record the game result.
-   * Safe to call from "playing" (first attempt) or "error" (retry).
-   * Stores the result internally so retryCompleteSession() can reuse it.
+   * Called from GameOverScene to report the game result.
+   *
+   * SURA (parent-submit): sends MINIGAME_COMPLETED via postMessage.
+   * The host receives the score and is responsible for persisting it.
+   * No HTTP calls are made from the game.
    */
   async completeGameSession(result: GameResult): Promise<void> {
     if (SURA_CONFIG.mode === "standalone") return;
-    if (this.state !== "playing" && this.state !== "error") return;
-    if (!this.client || !this.context) return;
+    if (this.state !== "playing") return;
+    if (!this.context) return;
 
-    this.lastResult = result;
-    this.setState("completing");
-
-    try {
-      const response = await this.client.completeSession(this.context, result);
-      if (!response.success) {
-        this.setState("error");
-        return;
-      }
-      this.setState("completed");
-      this.bridge.sendToParent(SURA_MSG.COMPLETED, {
-        session_id: this.context.sessionId,
-        game_id:    this.context.gameId,
-        score:      result.score,
-      });
-    } catch {
-      this.setState("error");
-      this.bridge.sendToParent(SURA_MSG.ERROR, {
-        session_id: this.context?.sessionId ?? "",
-        message:    "completeSession network error",
-      });
-    }
-  }
-
-  /**
-   * Retry the last completeGameSession call after an error.
-   * No-op if there is no stored result or state is not "error".
-   */
-  async retryCompleteSession(): Promise<void> {
-    if (this.state !== "error" || !this.lastResult) return;
-    await this.completeGameSession(this.lastResult);
+    this.bridge.sendToParent(SURA_MSG.COMPLETED, {
+      session_id: this.context.sessionId,
+      game_id:    this.context.gameId,
+      score:      result.score,
+      stats: {
+        level:            result.level,
+        survivedMs:       result.survivedMs,
+        meteorsDestroyed: result.meteorsDestroyed,
+        isNewRecord:      result.isNewRecord,
+      },
+    });
+    this.setState("completed");
   }
 
   /**
@@ -190,18 +153,6 @@ export class SuraIntegrationService {
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────
-
-  private buildClient(): ISuraApiClient | null {
-    const { mode } = SURA_CONFIG;
-    if (mode === "standalone") return null;
-    if (mode === "sura-mock") {
-      if (!import.meta.env.DEV) {
-        throw new Error("[SuraIntegrationService] sura-mock is only allowed in development.");
-      }
-      return new MockSuraApiClient();
-    }
-    return new RealSuraApiClient(SURA_CONFIG.apiBaseUrl);
-  }
 
   private registerBridgeHandlers(): void {
     this.bridge.on(SURA_MSG.INIT,   (env) => this.handleInit(env.payload));
@@ -223,7 +174,7 @@ export class SuraIntegrationService {
     ];
     if (!resettable.includes(this.state)) return;
 
-    // Parse and validate the payload shape.
+    // Validate required INIT fields.
     const p = payload as Partial<InitPayload>;
     const token      = typeof p.token      === "string" ? p.token      : null;
     const session_id = typeof p.session_id === "string" ? p.session_id : null;
@@ -236,6 +187,7 @@ export class SuraIntegrationService {
       return;
     }
 
+    // Store context in memory only — never logged, never persisted.
     this.context = {
       token,
       sessionId: session_id,
@@ -244,33 +196,15 @@ export class SuraIntegrationService {
       nickname:  typeof p.nickname === "string" ? p.nickname : undefined,
     };
 
-    // Notify host that we received the context.
+    // Acknowledge receipt of the context.
     this.bridge.sendToParent(SURA_MSG.SESSION_ACCEPTED, {
       session_id,
       game_id,
     });
 
-    // Start validating.
-    this.setState("validating");
-    void this.runValidation();
-  }
-
-  private async runValidation(): Promise<void> {
-    if (!this.client || !this.context) {
-      this.setState("error");
-      return;
-    }
-    try {
-      const response = await this.client.validateSession(this.context);
-      if (!response.success) {
-        const isAuthError = response.message.includes("401") || response.message.includes("403");
-        this.setState(isAuthError ? "unauthorized" : "error");
-        return;
-      }
-      this.setState("ready");
-    } catch {
-      this.setState("error");
-    }
+    // parent-submit: context is trusted as-is — no backend validation needed.
+    // Enable the JUGAR button immediately.
+    this.setState("ready");
   }
 
   private handleHostPause(): void {

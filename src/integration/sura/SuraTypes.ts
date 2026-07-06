@@ -55,10 +55,10 @@ export type SuraSessionContext = {
 
 export type GameResult = {
   score:              number;
-  // Internal stats — not part of the external SURA contract yet (provisional).
   level?:             number;
   survivedMs?:        number;
   meteorsDestroyed?:  number;
+  isNewRecord?:       boolean;
 };
 
 // ─── API response data shapes (provisional — subject to change by SURA) ───────

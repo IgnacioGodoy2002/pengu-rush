@@ -44,18 +44,19 @@ function buildConfig(): SuraConfig {
   }
 
   // ── Validation for real sura mode ─────────────────────────────────────
-  if (mode === "sura") {
-    if (!parentOrigin) {
-      throw new Error(
-        "[SuraRuntimeConfig] VITE_SURA_PARENT_ORIGIN is required when VITE_SURA_INTEGRATION_MODE=sura.",
-      );
-    }
-    if (!envBaseUrl) {
-      throw new Error(
-        "[SuraRuntimeConfig] VITE_SURA_API_BASE_URL is required when VITE_SURA_INTEGRATION_MODE=sura.",
-      );
-    }
+  // parentOrigin is required for postMessage security (origin-pinning).
+  // A missing value falls back to standalone so the game still loads visibly
+  // rather than crashing with a blank screen.
+  if (mode === "sura" && !parentOrigin) {
+    console.error(
+      "[SuraRuntimeConfig] VITE_SURA_PARENT_ORIGIN is required when " +
+      "VITE_SURA_INTEGRATION_MODE=sura. Falling back to standalone mode.",
+    );
+    mode = "standalone";
   }
+
+  // apiBaseUrl is not required for the parent-submit flow (the host
+  // persists the score; the game only communicates via postMessage).
 
   return { mode, gameId, gameVersion, parentOrigin, apiBaseUrl: envBaseUrl, isEmbedded, isDev };
 }
