@@ -27,18 +27,22 @@ export interface ISuraApiClient {
 // ─── Real (stub) implementation ───────────────────────────────────────────────
 
 /**
- * RealSuraApiClient — stub for future SURA backend integration.
+ * RealSuraApiClient — reference stub for a future direct-API flow.
  *
- * ⚠ STUB: Endpoints have not been provided by SURA yet.
- * All methods return a configuration error. The class exists so the
- * integration architecture is wire-ready once the backend becomes available.
- * Replace each method body with the real fetch call when endpoints are known.
+ * NOT used in the current parent-submit model. In parent-submit, the game
+ * communicates only via postMessage (MINIGAME_COMPLETED). The SURA host
+ * receives the score and calls its own backend. No HTTP requests are made
+ * from the game.
+ *
+ * This class is kept as documentation of the API shape in case a future
+ * flow requires direct backend calls from the game. At that point, replace
+ * each method body with the real fetch call once SURA provides the endpoints,
+ * headers, and response shapes.
  */
 export class RealSuraApiClient implements ISuraApiClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
-    if (!baseUrl) throw new Error("[RealSuraApiClient] apiBaseUrl is required.");
     this.baseUrl = baseUrl;
   }
 

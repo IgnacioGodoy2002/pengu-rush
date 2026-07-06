@@ -181,14 +181,13 @@ export class GameOverScene extends Phaser.Scene {
     // Show initial status based on current state
     this.updateSendStatus(service.getState());
 
-    // Trigger the API call to record the result
-    void service.completeGameSession({ score, level, survivedMs, meteorsDestroyed });
+    // Send MINIGAME_COMPLETED via postMessage (parent-submit: host persists score).
+    void service.completeGameSession({ score, level, survivedMs, meteorsDestroyed, isNewRecord: this.data_.isNewRecord });
   }
 
   private retrySend(): void {
-    let service: ReturnType<typeof getSuraService>;
-    try { service = getSuraService(); } catch { return; }
-    void service.retryCompleteSession();
+    // No-op in parent-submit: score is sent via postMessage in completeGameSession.
+    // There is no API call to retry.
   }
 
   private updateSendStatus(state: SuraIntegrationState): void {
@@ -196,10 +195,8 @@ export class GameOverScene extends Phaser.Scene {
 
     type StatusCfg = { label: string; color: string; showRetry: boolean };
     const STATUS: Partial<Record<SuraIntegrationState, StatusCfg>> = {
-      "playing":    { label: "Enviando resultado...",     color: "#7ec8e3", showRetry: false },
-      "completing": { label: "Enviando resultado...",     color: "#7ec8e3", showRetry: false },
-      "completed":  { label: "Resultado registrado ✓",   color: "#4ade80", showRetry: false },
-      "error":      { label: "No se pudo enviar el resultado.", color: "#f87171", showRetry: true },
+      "completed":  { label: "Resultado enviado ✓",  color: "#4ade80", showRetry: false },
+      "error":      { label: "Sesión no disponible.", color: "#f87171", showRetry: false },
     };
 
     const cfg = STATUS[state];
