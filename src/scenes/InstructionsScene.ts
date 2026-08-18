@@ -3,6 +3,7 @@ import { createButton } from "../ui/Button";
 import { FONT } from "../constants/theme";
 import { MusicManager } from "../services/MusicManager";
 import { SoundEffectsManager } from "../services/SoundEffectsManager";
+import { t } from "../i18n";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C_BG_HEX   = "#040d1a";
@@ -85,14 +86,14 @@ export class InstructionsScene extends Phaser.Scene {
 
     // ─── Header ───────────────────────────────────────────────────────────
     const como = this.add
-      .text(cx, comoY, "CÓMO", {
+      .text(cx, comoY, t("instr_title_1"), {
         fontFamily: FONT, fontSize: "58px", color: "#ffffff", fontStyle: "bold",
         shadow: { offsetX: 0, offsetY: 2, color: "#000033", blur: 12, fill: true },
       })
       .setOrigin(0.5);
 
     const jugar = this.add
-      .text(cx, jugarY, "JUGAR", {
+      .text(cx, jugarY, t("instr_title_2"), {
         fontFamily: FONT, fontSize: "58px", color: C_CYAN_HEX, fontStyle: "bold",
         stroke: "#083d4a", strokeThickness: 3,
         shadow: { offsetX: 0, offsetY: 0, color: C_CYAN_HEX, blur: 16, fill: true },
@@ -102,7 +103,7 @@ export class InstructionsScene extends Phaser.Scene {
     const div0 = this.buildDivider(cx, divY0, 560);
 
     // ─── CONTROLES (device-specific) ──────────────────────────────────────
-    const ctrlLbl = this.buildSectionLabel(cx, ctrlLblY, "CONTROLES");
+    const ctrlLbl = this.buildSectionLabel(cx, ctrlLblY, t("instr_section_controls"));
 
     // Key column centered at kx; label column left-aligned from lx
     const kx = cx - 90;
@@ -115,12 +116,12 @@ export class InstructionsScene extends Phaser.Scene {
     const div1 = this.buildDivider(cx, divY1, 560);
 
     // ─── OBJETIVO ─────────────────────────────────────────────────────────
-    const objLbl = this.buildSectionLabel(cx, objLblY, "OBJETIVO");
+    const objLbl = this.buildSectionLabel(cx, objLblY, t("instr_section_objective"));
 
     const objTxt = this.add
       .text(
         cx, objTxtY,
-        "Esquivá y destruí meteoritos.\nSobreviví el mayor tiempo posible y superá tu récord.",
+        t("instr_objective_text"),
         { fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center", lineSpacing: 5 },
       )
       .setOrigin(0.5);
@@ -128,24 +129,24 @@ export class InstructionsScene extends Phaser.Scene {
     const div2 = this.buildDivider(cx, divY2, 560);
 
     // ─── METEORITOS ───────────────────────────────────────────────────────
-    const metLbl = this.buildSectionLabel(cx, metLblY, "METEORITOS");
+    const metLbl = this.buildSectionLabel(cx, metLblY, t("instr_section_meteors"));
 
     const iconCol = cx - 210;      // circle centre-x
     const textCol = cx - 178;      // label left edge
 
-    const [met1g, met1t] = this.buildMeteorRow(iconCol, textCol, metY1, "meteor-small",  20, "Pequeño  —  1 golpe para destruir");
-    const [met2g, met2t] = this.buildMeteorRow(iconCol, textCol, metY2, "meteor-medium", 30, "Mediano  —  3 golpes para destruir");
-    const [met3g, met3t] = this.buildMeteorRow(iconCol, textCol, metY3, "meteor-large",  42, "Grande  —  7 golpes para destruir");
+    const [met1g, met1t] = this.buildMeteorRow(iconCol, textCol, metY1, "meteor-small",  20, t("instr_meteor_small"));
+    const [met2g, met2t] = this.buildMeteorRow(iconCol, textCol, metY2, "meteor-medium", 30, t("instr_meteor_medium"));
+    const [met3g, met3t] = this.buildMeteorRow(iconCol, textCol, metY3, "meteor-large",  42, t("instr_meteor_large"));
 
     const div3 = this.buildDivider(cx, divY3, 560);
 
     // ─── PUNTOS ───────────────────────────────────────────────────────────
-    const ptLbl = this.buildSectionLabel(cx, ptLblY, "PUNTOS");
+    const ptLbl = this.buildSectionLabel(cx, ptLblY, t("instr_section_points"));
 
     const ptTxt = this.add
       .text(
         cx, ptTxtY,
-        "Destruir meteoritos da más puntos que esquivarlos.\nLos meteoritos grandes son los más valiosos.",
+        t("instr_points_text"),
         { fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center", lineSpacing: 5 },
       )
       .setOrigin(0.5);
@@ -153,7 +154,7 @@ export class InstructionsScene extends Phaser.Scene {
     const div4 = this.buildDivider(cx, divY4, 560);
 
     // ─── ESCUDO ───────────────────────────────────────────────────────────
-    const shLbl  = this.buildSectionLabel(cx, shLblY, "ESCUDO");
+    const shLbl  = this.buildSectionLabel(cx, shLblY, t("instr_section_shield"));
 
     // Small shield icon aligned with the first text line
     const shIcon = this.add.image(iconCol, shTxt1Y + 13, "shield-icon")
@@ -161,19 +162,19 @@ export class InstructionsScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const shTxt1 = this.add
-      .text(textCol, shTxt1Y, "Recogé el símbolo cyan que cae del cielo", {
+      .text(textCol, shTxt1Y, t("instr_shield_line1"), {
         fontFamily: FONT, fontSize: "21px", color: "#94a3b8",
       })
       .setOrigin(0, 0.5);
 
     const shTxt2 = this.add
-      .text(textCol, shTxt2Y, "para activar un escudo temporal.", {
+      .text(textCol, shTxt2Y, t("instr_shield_line2"), {
         fontFamily: FONT, fontSize: "21px", color: "#94a3b8",
       })
       .setOrigin(0, 0.5);
 
     const shTxt3 = this.add
-      .text(cx, shTxt3Y, "Absorbe un choque y desaparece. Sin usarlo, expira solo.", {
+      .text(cx, shTxt3Y, t("instr_shield_line3"), {
         fontFamily: FONT, fontSize: "19px", color: "#64748b", align: "center",
         wordWrap: { width: 530 },
       })
@@ -182,16 +183,16 @@ export class InstructionsScene extends Phaser.Scene {
     const div5 = this.buildDivider(cx, divY5, 560);
 
     // ─── PAUSA Y AUDIO ────────────────────────────────────────────────────
-    const pauLbl = this.buildSectionLabel(cx, pauLblY, "PAUSA Y AUDIO");
+    const pauLbl = this.buildSectionLabel(cx, pauLblY, t("instr_section_pause"));
 
     const pauTxt1 = this.add
-      .text(cx, pauTxt1Y, "Usá el botón PAUSA para detener la partida.", {
+      .text(cx, pauTxt1Y, t("instr_pause_line1"), {
         fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center",
       })
       .setOrigin(0.5);
 
     const pauTxt2 = this.add
-      .text(cx, pauTxt2Y, "El botón de audio silencia música y efectos.", {
+      .text(cx, pauTxt2Y, t("instr_pause_line2"), {
         fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center",
       })
       .setOrigin(0.5);
@@ -201,7 +202,7 @@ export class InstructionsScene extends Phaser.Scene {
     // ─── Button ───────────────────────────────────────────────────────────
     const { bg: btnBg, text: btnTxt } = createButton({
       scene: this, x: cx, y: btnY, width: 460, height: 78,
-      label: "VOLVER AL MENÚ", bgColor: C_SEC_BTN, fontSize: "28px",
+      label: t("instr_back"), bgColor: C_SEC_BTN, fontSize: "28px",
       onClick: () => {},
     });
     btnBg.setStrokeStyle(2, C_SEC_BORD, 0.65).setInteractive({ useHandCursor: true });
@@ -244,13 +245,13 @@ export class InstructionsScene extends Phaser.Scene {
     const objs: FadeTarget[] = [];
 
     objs.push(...this.buildKeyRow(kx, y1, ["A", "D", "←", "→"]));
-    objs.push(this.mkLabel(lx, y1, "Mover la nave"));
+    objs.push(this.mkLabel(lx, y1, t("ctrl_move")));
 
     objs.push(...this.buildKeyRow(kx, y2, ["ESPACIO"]));
-    objs.push(this.mkLabel(lx, y2, "Disparar"));
+    objs.push(this.mkLabel(lx, y2, t("ctrl_shoot")));
 
     objs.push(...this.buildKeyRow(kx, y3, ["P", "ESC"]));
-    objs.push(this.mkLabel(lx, y3, "Pausar la partida"));
+    objs.push(this.mkLabel(lx, y3, t("ctrl_pause")));
 
     return objs;
   }
@@ -262,13 +263,13 @@ export class InstructionsScene extends Phaser.Scene {
     const objs: FadeTarget[] = [];
 
     objs.push(...this.buildSwipeIcon(kx, y1));
-    objs.push(this.mkLabel(lx, y1, "Mover la nave"));
+    objs.push(this.mkLabel(lx, y1, t("ctrl_move")));
 
     objs.push(...this.buildKeyRow(kx, y2, ["FIRE"]));
-    objs.push(this.mkLabel(lx, y2, "Disparar"));
+    objs.push(this.mkLabel(lx, y2, t("ctrl_shoot")));
 
     objs.push(...this.buildKeyRow(kx, y3, ["PAUSA"]));
-    objs.push(this.mkLabel(lx, y3, "Pausar la partida"));
+    objs.push(this.mkLabel(lx, y3, t("ctrl_pause")));
 
     return objs;
   }

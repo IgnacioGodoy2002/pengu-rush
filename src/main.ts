@@ -7,6 +7,11 @@ import { InstructionsScene } from "./scenes/InstructionsScene";
 import { GameScene } from "./scenes/GameScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { CANVAS } from "./constants/theme";
+import { SPACE_BG_HEX } from "./scenes/SpaceBackground";
+
+// Expose the canvas background color as a CSS custom property so style.css
+// can use it for the mobile letterbox override without duplicating the value.
+document.documentElement.style.setProperty("--space-bg", SPACE_BG_HEX);
 
 const DEBUG_PHYSICS = false;
 

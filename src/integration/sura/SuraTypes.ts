@@ -54,11 +54,15 @@ export type SuraSessionContext = {
 // ─── Game result ──────────────────────────────────────────────────────────────
 
 export type GameResult = {
-  score:              number;
-  level?:             number;
-  survivedMs?:        number;
-  meteorsDestroyed?:  number;
-  isNewRecord?:       boolean;
+  score:               number;
+  level?:              number;
+  survivedMs?:         number;
+  meteorsDestroyed?:   number;
+  isNewRecord?:        boolean;
+  // Local reward preview — SURA backend is the authority on actual points.
+  estimatedSuraPoints?: number;
+  rewardScoreUnit?:    number;
+  rewardPointsPerUnit?: number;
 };
 
 // ─── API response data shapes (provisional — subject to change by SURA) ───────

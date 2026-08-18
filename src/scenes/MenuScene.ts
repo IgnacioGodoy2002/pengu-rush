@@ -6,6 +6,8 @@ import { MusicManager } from "../services/MusicManager";
 import { SoundEffectsManager } from "../services/SoundEffectsManager";
 import { getSuraService } from "../integration/sura/SuraIntegrationService";
 import type { SuraIntegrationState, SuraServiceEvent } from "../integration/sura/SuraTypes";
+import { t, I18nService } from "../i18n";
+import type { Locale, TranslationKey } from "../i18n";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C_BG_HEX    = "#040d1a";
@@ -29,14 +31,14 @@ type FadeTarget =
   | Phaser.GameObjects.Text
   | Phaser.GameObjects.Rectangle;
 
-// ─── SURA status label per state ─────────────────────────────────────────────
-const SURA_STATUS: Partial<Record<SuraIntegrationState, string>> = {
-  "waiting-context": "Esperando sesión SURA...",
-  "validating":      "Validando sesión...",
-  "ready":           "¡Listo!",
-  "starting":        "Iniciando partida...",
-  "unauthorized":    "Sesión no autorizada.",
-  "error":           "Error al conectar con SURA.",
+// ─── SURA status translation key per state ────────────────────────────────────
+const SURA_STATUS_KEY: Partial<Record<SuraIntegrationState, TranslationKey>> = {
+  "waiting-context": "sura_waiting",
+  "validating":      "sura_validating",
+  "ready":           "sura_ready",
+  "starting":        "sura_starting",
+  "unauthorized":    "sura_unauthorized",
+  "error":           "sura_error",
 };
 
 export class MenuScene extends Phaser.Scene {
@@ -80,18 +82,19 @@ export class MenuScene extends Phaser.Scene {
     const jugarY   = badgeY  + 132;
     const comoY    = jugarY  + 115;
     const div2Y    = comoY   + 80;
-    const verY     = panelCY + PANEL_H / 2 - 50;
+    const langY    = div2Y   + 30;
+    const verY     = langY   + 36;
 
     const pengu = this.buildPengu(cx, titleY);
     const rush  = this.buildRush(cx, rushY);
-    const sub   = this.buildSubtitle(cx, subY);
+    const sub   = this.buildSubtitle(cx, subY, t("menu_subtitle"));
     const div1  = this.buildDivider(cx, div1Y, 510);
 
     const { bestScore } = RecordsService.load();
-    const badge = this.buildBadge(cx, badgeY, bestScore);
+    const badge = this.buildBadge(cx, badgeY, bestScore, t("menu_record_label"));
 
     const [jugarBg, jugarTxt] = this.buildButton(
-      cx, jugarY, 500, 92, "JUGAR", C_JUGAR, "38px",
+      cx, jugarY, 500, 92, t("menu_play"), C_JUGAR, "38px",
       C_CYAN, 0.85, 1.035, 0.87,
       () => this.startGame(),
     );
@@ -99,7 +102,7 @@ export class MenuScene extends Phaser.Scene {
     this.jugarText = jugarTxt;
 
     const como = this.buildButton(
-      cx, comoY, 500, 82, "CÓMO JUGAR", C_COMO, "30px",
+      cx, comoY, 500, 82, t("menu_how_to_play"), C_COMO, "30px",
       C_COMO_BORD, 0.65, 1.025, 0.75,
       () => this.scene.start("InstructionsScene"),
     );
@@ -113,9 +116,10 @@ export class MenuScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(1);
 
-    const div2    = this.buildDivider(cx, div2Y, 420);
+    const div2      = this.buildDivider(cx, div2Y, 420);
+    const langChips = this.buildLangChips(cx, langY);
     const version = this.add
-      .text(cx, verY, "MVP v1.0", {
+      .text(cx, verY, t("menu_version"), {
         fontFamily: FONT, fontSize: "18px", color: "#2d4a68",
       })
       .setOrigin(0.5);
@@ -125,7 +129,7 @@ export class MenuScene extends Phaser.Scene {
     const w0: FadeTarget[] = [panel];
     const w1: FadeTarget[] = [glow, pengu, rush];
     const w2: FadeTarget[] = [sub, div1, ...badge];
-    const w3: FadeTarget[] = [...[jugarBg, jugarTxt], ...como, div2, version, ...muteBtn];
+    const w3: FadeTarget[] = [...[jugarBg, jugarTxt], ...como, div2, ...langChips, version, ...muteBtn];
 
     for (const o of [...w0, ...w1, ...w2, ...w3]) o.setAlpha(0);
 
@@ -181,7 +185,8 @@ export class MenuScene extends Phaser.Scene {
     }
 
     // Status label
-    const label = SURA_STATUS[state] ?? "";
+    const stateKey = SURA_STATUS_KEY[state];
+    const label = stateKey ? t(stateKey) : "";
     if (this.suraStatusText) {
       this.suraStatusText.setText(label);
       this.suraStatusText.setAlpha(label ? 1 : 0);
@@ -309,9 +314,9 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
   }
 
-  private buildSubtitle(cx: number, y: number): Phaser.GameObjects.Text {
+  private buildSubtitle(cx: number, y: number, text: string): Phaser.GameObjects.Text {
     return this.add
-      .text(cx, y, "Esquivá los meteoritos\ny superá tu récord", {
+      .text(cx, y, text, {
         fontFamily: FONT, fontSize: "26px", color: "#7ec8e3",
         align: "center", lineSpacing: 7,
       })
@@ -357,7 +362,7 @@ export class MenuScene extends Phaser.Scene {
     return g;
   }
 
-  private buildBadge(cx: number, cy: number, score: number): FadeTarget[] {
+  private buildBadge(cx: number, cy: number, score: number, badgeLabel: string): FadeTarget[] {
     const bw = 500, bh = 82;
 
     const g = this.add.graphics();
@@ -367,7 +372,7 @@ export class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(cx - bw / 2, cy - bh / 2, bw, bh, 10);
 
     const label = this.add
-      .text(cx, cy - 14, "★  Récord personal", {
+      .text(cx, cy - 14, badgeLabel, {
         fontFamily: FONT, fontSize: "19px", color: C_GOLD_HEX,
       })
       .setOrigin(0.5);
@@ -379,6 +384,49 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     return [g, label, scoreText];
+  }
+
+  private buildLangChips(cx: number, cy: number): FadeTarget[] {
+    const locales: Locale[]            = ["es", "en", "pt"];
+    const labels: Record<Locale, string> = { es: "ES", en: "EN", pt: "PT" };
+    const chipW  = 52, chipH = 26, gap = 8, r = 4;
+    const totalW = locales.length * chipW + (locales.length - 1) * gap;
+    const result: FadeTarget[] = [];
+    let x        = cx - totalW / 2;
+    const current = I18nService.getLocale();
+
+    for (const locale of locales) {
+      const isActive = locale === current;
+      const kx       = x + chipW / 2;
+
+      const bg = this.add.graphics();
+      bg.fillStyle(isActive ? C_JUGAR : 0x1e3a5f, 1);
+      bg.fillRoundedRect(kx - chipW / 2, cy - chipH / 2, chipW, chipH, r);
+      bg.lineStyle(1.5, isActive ? C_CYAN : 0x4a7fa5, isActive ? 0.8 : 0.4);
+      bg.strokeRoundedRect(kx - chipW / 2, cy - chipH / 2, chipW, chipH, r);
+
+      const txt = this.add
+        .text(kx, cy, labels[locale], {
+          fontFamily: FONT, fontSize: "14px",
+          color:      isActive ? C_CYAN_HEX : "#3d5a78",
+          fontStyle:  isActive ? "bold" : "normal",
+        })
+        .setOrigin(0.5);
+
+      const hit = this.add
+        .rectangle(kx, cy, chipW, chipH, 0x000000, 0)
+        .setInteractive({ useHandCursor: true });
+
+      hit.on("pointerdown", () => {
+        if (I18nService.getLocale() === locale) return;
+        I18nService.setLocale(locale);
+        this.scene.restart();
+      });
+
+      result.push(bg, txt, hit);
+      x += chipW + gap;
+    }
+    return result;
   }
 
   private buildButton(

@@ -43,6 +43,19 @@ body {
 }
 
 /*
+ * Mobile: replace the desktop galaxy background with the game's own space color
+ * so the letterbox bars around the Phaser canvas are indistinguishable from the
+ * game itself. The value comes from --space-bg, injected in main.ts from
+ * SPACE_BG_HEX (SpaceBackground.ts), so this always stays in sync.
+ */
+@media (max-width: 767px) {
+  body {
+    background-image: none;
+    background-color: var(--space-bg, #07111f);
+  }
+}
+
+/*
  * Para cambiar la sombra del canvas: ajustá los valores de box-shadow.
  */
 canvas {
