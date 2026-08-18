@@ -128,10 +128,14 @@ export class SuraIntegrationService {
       game_id:    this.context.gameId,
       score:      result.score,
       stats: {
-        level:            result.level,
-        survivedMs:       result.survivedMs,
-        meteorsDestroyed: result.meteorsDestroyed,
-        isNewRecord:      result.isNewRecord,
+        level:               result.level,
+        survivedMs:          result.survivedMs,
+        meteorsDestroyed:    result.meteorsDestroyed,
+        isNewRecord:         result.isNewRecord,
+        // Local reward preview — SURA backend is the authority on actual points.
+        estimatedSuraPoints: result.estimatedSuraPoints,
+        rewardScoreUnit:     result.rewardScoreUnit,
+        rewardPointsPerUnit: result.rewardPointsPerUnit,
       },
     });
     this.setState("completed");

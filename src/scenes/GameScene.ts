@@ -13,6 +13,7 @@ import { ThrusterEffect } from "../effects/ThrusterEffect";
 import { SoundEffectsManager } from "../services/SoundEffectsManager";
 import { getSuraService } from "../integration/sura/SuraIntegrationService";
 import type { SuraServiceEvent, SuraServiceListener } from "../integration/sura/SuraTypes";
+import { t } from "../i18n";
 
 // ─── Player multi-part hitbox config ──────────────────────────────────────────
 // Adjusted for the armed ship (nave_penguino_armada.png) with cannon pods.
@@ -144,7 +145,6 @@ export class GameScene extends Phaser.Scene {
 
   // ── Touch tracking (relative movement, no teleport) ───────────────────────
   private lastPointerX = 0;
-  private lastPointerY = 0;
 
   // ── Stored handler refs for explicit removal in SHUTDOWN ──────────────────
   private onPointerDown!: (ptr: Phaser.Input.Pointer) => void;
@@ -192,7 +192,6 @@ export class GameScene extends Phaser.Scene {
     this.firePtr      = null;
     this.movePtrId    = null;
     this.lastPointerX = 0;
-    this.lastPointerY = 0;
     this.isPointerOverUI = false;
     this.tutorialPanel = [];
     this.hostPauseActive     = false;
@@ -221,14 +220,14 @@ export class GameScene extends Phaser.Scene {
     // ── HUD strip ─────────────────────────────────────────────────────────
     this.add.rectangle(width / 2, 70, width, 140, 0x000000, 0.35);
 
-    this.scoreText = this.add.text(28, 24, "Puntaje: 0", {
+    this.scoreText = this.add.text(28, 24, t("hud_score", { value: 0 }), {
       fontFamily: FONT, fontSize: "26px", color: COLORS.white, fontStyle: "bold",
     });
-    this.add.text(28, 60, `Récord: ${this.savedData.bestScore}`, {
+    this.add.text(28, 60, t("hud_record", { value: this.savedData.bestScore }), {
       fontFamily: FONT, fontSize: "22px", color: COLORS.muted,
     });
     this.levelText = this.add
-      .text(width - 130, 24, "Nivel: 1", {
+      .text(width - 130, 24, t("hud_level", { value: 1 }), {
         fontFamily: FONT, fontSize: "26px", color: COLORS.white, fontStyle: "bold",
       })
       .setOrigin(0, 0);
@@ -319,7 +318,6 @@ export class GameScene extends Phaser.Scene {
       if (this.movePtrId === null) {
         this.movePtrId    = ptr.id;
         this.lastPointerX = ptr.x;
-        this.lastPointerY = ptr.y;
       }
     };
 
@@ -327,9 +325,7 @@ export class GameScene extends Phaser.Scene {
       if (!this.gameStarted || this.gameOver || this.paused || !ptr.isDown) return;
       if (ptr.id !== this.movePtrId || !ptr.wasTouch) return;
       this.player.x    += ptr.x - this.lastPointerX;
-      this.player.y    += ptr.y - this.lastPointerY;
       this.lastPointerX = ptr.x;
-      this.lastPointerY = ptr.y;
       this.keepPlayerInsideScreen();
       this.syncHitboxes();
     };
@@ -338,7 +334,6 @@ export class GameScene extends Phaser.Scene {
       if (ptr.id === this.movePtrId) {
         this.movePtrId    = null;
         this.lastPointerX = 0;
-        this.lastPointerY = 0;
       }
       if (ptr.id === this.firePtr) {
         this.shootBtnDown = false;
@@ -389,7 +384,7 @@ export class GameScene extends Phaser.Scene {
     // ── Controls hint ─────────────────────────────────────────────────────
     const hintText = this.add
       .text(width / 2, height - 32,
-        "A / D · flechas · arrastrar  |  P pausa  |  ESPACIO disparar", {
+        t("hud_controls_hint"), {
           fontFamily: FONT, fontSize: "19px", color: COLORS.muted,
         })
       .setOrigin(0.5);
@@ -441,7 +436,6 @@ export class GameScene extends Phaser.Scene {
       this.movePtrId    = null;
       this.firePtr      = null;
       this.lastPointerX = 0;
-      this.lastPointerY = 0;
       this.shootBtnDown = false;
       // Object cleanup
       this.thruster?.destroy();
@@ -523,7 +517,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(20);
 
-    const steps = ["3", "2", "1", "YA!"];
+    const steps = ["3", "2", "1", t("countdown_go")];
     steps.forEach((label, i) => {
       this.time.delayedCall(i * 900, () => {
         countText.setText(label).setAlpha(1).setScale(1);
@@ -600,20 +594,20 @@ export class GameScene extends Phaser.Scene {
 
     const overlay  = this.add.rectangle(cx, cy, width, height, 0x000000, 0.72).setDepth(d);
     const title    = this.add
-      .text(cx, cy - 160, "PAUSA", {
+      .text(cx, cy - 160, t("pause_title"), {
         fontFamily: FONT, fontSize: "72px", color: COLORS.white, fontStyle: "bold",
       })
       .setOrigin(0.5).setDepth(d + 1);
 
     const resumeBtn = createButton({
       scene: this, x: cx, y: cy - 20, width: 400, height: 80,
-      label: "CONTINUAR", bgColor: COLORS.btnPrimary, fontSize: "32px",
+      label: t("pause_resume"), bgColor: COLORS.btnPrimary, fontSize: "32px",
       depth: d + 1, onClick: () => this.resumeGame(),
     });
 
     const menuBtn = createButton({
       scene: this, x: cx, y: cy + 110, width: 400, height: 80,
-      label: "VOLVER AL MENÚ", bgColor: COLORS.btnSecondary, fontSize: "28px",
+      label: t("pause_menu"), bgColor: COLORS.btnSecondary, fontSize: "28px",
       depth: d + 1, onClick: () => {
         // Restore time and physics before leaving so that if GameScene is
         // restarted later its Clock starts unpaused and all timers fire.
@@ -669,8 +663,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(18)
       .setAlpha(0);
 
-    const moveLabel  = isTouch ? "DESLIZÁ"           : "← / →   ó   A / D";
-    const shootLabel = isTouch ? "FIRE"              : "ESPACIO";
+    const moveLabel  = isTouch ? t("ctrl_touch_move_key")  : t("ctrl_desktop_move_keys");
+    const shootLabel = isTouch ? t("ctrl_touch_shoot_key") : t("ctrl_desktop_shoot_key");
 
     const t1 = this.add
       .text(cx, panelY - 55, moveLabel, {
@@ -679,7 +673,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5).setDepth(18).setAlpha(0);
 
     const t2 = this.add
-      .text(cx, panelY - 22, "para moverte", {
+      .text(cx, panelY - 22, t("tutorial_move_hint"), {
         fontFamily: FONT, fontSize: "19px", color: COLORS.muted,
       })
       .setOrigin(0.5).setDepth(18).setAlpha(0);
@@ -691,7 +685,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5).setDepth(18).setAlpha(0);
 
     const t4 = this.add
-      .text(cx, panelY + 55, "para disparar", {
+      .text(cx, panelY + 55, t("tutorial_shoot_hint"), {
         fontFamily: FONT, fontSize: "19px", color: COLORS.muted,
       })
       .setOrigin(0.5).setDepth(18).setAlpha(0);
@@ -785,7 +779,7 @@ export class GameScene extends Phaser.Scene {
     if (delay === this.currentDelay && level === this.currentLevel) return;
     this.currentDelay = delay;
     this.currentLevel = level;
-    this.levelText.setText(`Nivel: ${level}`);
+    this.levelText.setText(t("hud_level", { value: level }));
     this.spawnTimer.remove(false);
     this.spawnTimer = this.time.addEvent({
       delay: this.currentDelay,
@@ -807,7 +801,7 @@ export class GameScene extends Phaser.Scene {
     const cfg = this.getMeteorCfg(meteor);
     this.score += cfg?.destroyScore ?? 10;
     this.meteorsDestroyed += 1;
-    this.scoreText.setText(`Puntaje: ${this.score}`);
+    this.scoreText.setText(t("hud_score", { value: this.score }));
     this.updateDifficulty();
     // Destroy SFX — fires exactly once per meteor (guarded by resolved above).
     if      (cfg?.key === "meteor-small")  SoundEffectsManager.play(this, "sfx-destroy-small");
@@ -835,7 +829,7 @@ export class GameScene extends Phaser.Scene {
     obstacle.setData("resolved", true);
     const cfg = this.getMeteorCfg(obstacle);
     this.score += cfg?.surviveScore ?? 5;
-    this.scoreText.setText(`Puntaje: ${this.score}`);
+    this.scoreText.setText(t("hud_score", { value: this.score }));
     this.updateDifficulty();
   }
 
@@ -1434,6 +1428,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(500, () => {
       this.scene.start("GameOverScene", {
         score:            this.score,
+        prevBestScore:    this.savedData.bestScore,
         bestScore:        result.newBestScore,
         level:            this.currentLevel,
         survivedMs:       this.survivedMs,
