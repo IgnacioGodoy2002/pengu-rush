@@ -28,6 +28,7 @@ class I18nServiceClass {
   constructor() {
     this.locale = detectLocale();
     this.dict = LOCALES[this.locale];
+    (window as any).__penguLocale__ = this.locale;
   }
 
   getLocale(): Locale { return this.locale; }
@@ -36,6 +37,7 @@ class I18nServiceClass {
     this.locale = locale;
     this.dict = LOCALES[locale];
     localStorage.setItem(STORAGE_KEY, locale);
+    (window as any).__penguLocale__ = locale;
   }
 
   t(key: TranslationKey, params?: Record<string, string | number>): string {
