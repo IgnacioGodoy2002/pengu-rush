@@ -52,7 +52,6 @@ export const es = {
   // ── HUD (GameScene) ───────────────────────────────────────────────────────
   hud_score:                "Puntaje: {value}",
   hud_record:               "Récord: {value}",
-  hud_level:                "Nivel: {value}",
   hud_controls_hint:        "A / D · flechas · arrastrar  |  P pausa  |  ESPACIO disparar",
   countdown_go:             "YA!",
 
@@ -72,7 +71,6 @@ export const es = {
   gameover_new_record:      "¡NUEVO RÉCORD!",
   gameover_time:            "TIEMPO: {time}",
   gameover_destroyed:       "DESTRUIDOS: {count}",
-  gameover_level:           "NIVEL: {level}",
   gameover_retry:           "REINTENTAR",
   gameover_back_sura:       "VOLVER A SURA",
   gameover_mock_hint:       "Iniciá una nueva sesión\ndesde el host de prueba",
