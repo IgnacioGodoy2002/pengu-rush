@@ -138,7 +138,7 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: w2, alpha: 1, duration: 360, delay: 270, ease: "Quad.Out" });
     this.tweens.add({
       targets: w3, alpha: 1, duration: 360, delay: 400, ease: "Quad.Out",
-      onComplete: () => { (window as any).__penguSceneReady__ = true; },
+      onComplete: () => { if (import.meta.env.DEV) (window as any).__penguSceneReady__ = true; },
     });
 
     this.setupSuraIntegration();
