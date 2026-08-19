@@ -8,8 +8,9 @@ export default defineConfig({
     baseURL: "http://localhost:4174",
   },
   webServer: {
-    // Serve the already-built dist/ folder. Run `npm run build` first if needed.
-    command: "npx vite preview --port 4174",
+    // Dev server (import.meta.env.DEV=true) so test hooks are active.
+    // Production builds strip the hooks via dead-code elimination.
+    command: "npx vite --port 4174",
     port: 4174,
     reuseExistingServer: true,
   },
