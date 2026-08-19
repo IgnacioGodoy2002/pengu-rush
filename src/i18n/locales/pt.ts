@@ -53,7 +53,6 @@ export const pt: Record<TranslationKey, string> = {
   // ── HUD (GameScene) ───────────────────────────────────────────────────────
   hud_score:                "Pontos: {value}",
   hud_record:               "Recorde: {value}",
-  hud_level:                "Nível: {value}",
   hud_controls_hint:        "A / D · setas · arrastar  |  P pausar  |  ESPAÇO atirar",
   countdown_go:             "VAI!",
 
@@ -73,7 +72,6 @@ export const pt: Record<TranslationKey, string> = {
   gameover_new_record:      "NOVO RECORDE!",
   gameover_time:            "TEMPO: {time}",
   gameover_destroyed:       "DESTRUÍDOS: {count}",
-  gameover_level:           "NÍVEL: {level}",
   gameover_retry:           "TENTAR DE NOVO",
   gameover_back_sura:       "VOLTAR AO SURA",
   gameover_mock_hint:       "Inicie uma nova sessão\na partir do host de teste",

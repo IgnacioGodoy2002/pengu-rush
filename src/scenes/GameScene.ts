@@ -85,7 +85,6 @@ export class GameScene extends Phaser.Scene {
 
   // ── HUD refs ──────────────────────────────────────────────────────────────
   private scoreText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
 
   // ── Persistence ───────────────────────────────────────────────────────────
   private savedData!: SavedData;
@@ -213,9 +212,11 @@ export class GameScene extends Phaser.Scene {
     this.spaceBackground = new SpaceBackground(this);
     this.cameras.main.setBackgroundColor(SPACE_BG_HEX);
 
-    // ── Corner accents ────────────────────────────────────────────────────
-    this.add.rectangle(0, 0, 200, 200, COLORS.greenNum, 0.05).setOrigin(0, 0);
-    this.add.rectangle(width, height, 200, 200, COLORS.greenNum, 0.05).setOrigin(1, 1);
+    // ── Corner accents (desktop only — too visible on mobile screens) ────
+    if (!this.sys.game.device.input.touch) {
+      this.add.rectangle(0, 0, 200, 200, COLORS.greenNum, 0.05).setOrigin(0, 0);
+      this.add.rectangle(width, height, 200, 200, COLORS.greenNum, 0.05).setOrigin(1, 1);
+    }
 
     // ── HUD strip ─────────────────────────────────────────────────────────
     this.add.rectangle(width / 2, 70, width, 140, 0x000000, 0.35);
@@ -226,12 +227,6 @@ export class GameScene extends Phaser.Scene {
     this.add.text(28, 60, t("hud_record", { value: this.savedData.bestScore }), {
       fontFamily: FONT, fontSize: "22px", color: COLORS.muted,
     });
-    this.levelText = this.add
-      .text(width - 130, 24, t("hud_level", { value: 1 }), {
-        fontFamily: FONT, fontSize: "26px", color: COLORS.white, fontStyle: "bold",
-      })
-      .setOrigin(0, 0);
-
     // Pause button — top right
     const pauseBtn = createButton({
       scene: this,
@@ -779,7 +774,6 @@ export class GameScene extends Phaser.Scene {
     if (delay === this.currentDelay && level === this.currentLevel) return;
     this.currentDelay = delay;
     this.currentLevel = level;
-    this.levelText.setText(t("hud_level", { value: level }));
     this.spawnTimer.remove(false);
     this.spawnTimer = this.time.addEvent({
       delay: this.currentDelay,

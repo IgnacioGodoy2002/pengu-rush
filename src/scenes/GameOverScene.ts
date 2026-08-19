@@ -123,7 +123,6 @@ export class GameOverScene extends Phaser.Scene {
     const statStyle = { fontFamily: FONT, fontSize: "30px", color: COLORS.muted };
     this.add.text(cx, 578, t("gameover_time",      { time:  formatTime(survivedMs) }), statStyle).setOrigin(0.5);
     this.add.text(cx, 645, t("gameover_destroyed", { count: meteorsDestroyed }),        statStyle).setOrigin(0.5);
-    this.add.text(cx, 712, t("gameover_level",     { level }),                          statStyle).setOrigin(0.5);
 
     this.addDivider(cx, 776, 540);
 
