@@ -136,7 +136,10 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: w0, alpha: 1, duration: 380, ease: "Quad.Out" });
     this.tweens.add({ targets: w1, alpha: 1, duration: 420, delay: 130, ease: "Quad.Out" });
     this.tweens.add({ targets: w2, alpha: 1, duration: 360, delay: 270, ease: "Quad.Out" });
-    this.tweens.add({ targets: w3, alpha: 1, duration: 360, delay: 400, ease: "Quad.Out" });
+    this.tweens.add({
+      targets: w3, alpha: 1, duration: 360, delay: 400, ease: "Quad.Out",
+      onComplete: () => { (window as any).__penguSceneReady__ = true; },
+    });
 
     this.setupSuraIntegration();
 
@@ -145,6 +148,7 @@ export class MenuScene extends Phaser.Scene {
         try { getSuraService().unsubscribe(this.onSuraEvent); } catch { /* not initialised */ }
       }
     });
+
   }
 
   // ─── SURA integration ────────────────────────────────────────────────────
