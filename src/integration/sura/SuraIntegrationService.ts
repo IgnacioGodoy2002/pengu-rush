@@ -124,9 +124,10 @@ export class SuraIntegrationService {
     if (!this.context) return;
 
     this.bridge.sendToParent(SURA_MSG.COMPLETED, {
-      session_id: this.context.sessionId,
-      game_id:    this.context.gameId,
-      score:      result.score,
+      session_id:   this.context.sessionId,
+      game_id:      this.context.gameId,
+      score:        result.score,
+      player_alias: this.context.nickname ?? null,
       stats: {
         level:               result.level,
         survivedMs:          result.survivedMs,

@@ -7,6 +7,10 @@ export const es = {
   menu_play:                "JUGAR",
   menu_how_to_play:         "CÓMO JUGAR",
   menu_version:             "MVP v1.0",
+  leaderboard_title:        "🏆 TOP JUGADORES",
+  leaderboard_you:          "vos",
+  leaderboard_view_ranking: "VER RANKING",
+  leaderboard_back:         "← VOLVER AL MENÚ",
 
   // ── Estado SURA (MenuScene) ───────────────────────────────────────────────
   sura_waiting:             "Esperando sesión SURA...",
