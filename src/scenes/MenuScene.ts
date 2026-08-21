@@ -24,8 +24,8 @@ const C_COMO      = 0x1e3a5f;
 const C_COMO_BORD = 0x4a7fa5;
 
 // ─── Panel geometry ───────────────────────────────────────────────────────────
-const PANEL_W = 620;
-const PANEL_H = 1040;
+const PANEL_W = 664;
+const PANEL_H = 1224;
 const PANEL_R = 18;
 
 type FadeTarget =
@@ -65,7 +65,7 @@ export class MenuScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
     const cx      = width / 2;
-    const panelCY = height * 0.48;
+    const panelCY = height / 2;
     const top     = panelCY - PANEL_H / 2;
 
     this.cameras.main.setBackgroundColor(C_BG_HEX);
@@ -74,33 +74,33 @@ export class MenuScene extends Phaser.Scene {
     this.buildStars(width, height);
 
     const panel = this.buildPanel(cx, panelCY);
-    const glow  = this.buildGlow(cx, top + 155);
+    const glow  = this.buildGlow(cx, top + 182);
 
-    const titleY       = top + 118;
-    const rushY        = titleY      + 100;
-    const subY         = rushY       + 108;
-    const div1Y        = subY        + 66;
-    const badgeY       = div1Y       + 70;
-    const jugarY       = badgeY      + 132;
-    const comoY        = jugarY      + 115;
-    const top3DivY     = comoY       + 56;   // thin divider above TOP 3
-    const top3RowY0    = top3DivY    + 24;   // first row center
-    const TOP3_SPACING = 26;
-    const rankBtnY     = top3RowY0   + 2 * TOP3_SPACING + 40;  // "VER RANKING"
-    const div2Y        = rankBtnY    + 50;
-    const langY        = div2Y       + 28;
-    const verY         = langY       + 32;
+    const titleY       = top + 138;
+    const rushY        = titleY      + 118;
+    const subY         = rushY       + 126;
+    const div1Y        = subY        + 78;
+    const badgeY       = div1Y       + 82;
+    const jugarY       = badgeY      + 156;
+    const comoY        = jugarY      + 135;
+    const top3DivY     = comoY       + 66;
+    const top3RowY0    = top3DivY    + 28;
+    const TOP3_SPACING = 30;
+    const rankBtnY     = top3RowY0   + 2 * TOP3_SPACING + 48;
+    const div2Y        = rankBtnY    + 58;
+    const langY        = div2Y       + 32;
+    const verY         = langY       + 40;
 
     const pengu = this.buildPengu(cx, titleY);
     const rush  = this.buildRush(cx, rushY);
     const sub   = this.buildSubtitle(cx, subY, t("menu_subtitle"));
-    const div1  = this.buildDivider(cx, div1Y, 510);
+    const div1  = this.buildDivider(cx, div1Y, 580);
 
     const { bestScore } = RecordsService.load();
     const badge = this.buildBadge(cx, badgeY, bestScore, t("menu_record_label"));
 
     const [jugarBg, jugarTxt] = this.buildButton(
-      cx, jugarY, 500, 92, t("menu_play"), C_JUGAR, "38px",
+      cx, jugarY, 570, 108, t("menu_play"), C_JUGAR, "38px",
       C_CYAN, 0.85, 1.035, 0.87,
       () => this.startGame(),
     );
@@ -108,14 +108,14 @@ export class MenuScene extends Phaser.Scene {
     this.jugarText = jugarTxt;
 
     const como = this.buildButton(
-      cx, comoY, 500, 82, t("menu_how_to_play"), C_COMO, "30px",
+      cx, comoY, 570, 96, t("menu_how_to_play"), C_COMO, "30px",
       C_COMO_BORD, 0.65, 1.025, 0.75,
       () => this.scene.start("InstructionsScene"),
     );
 
     // SURA status text (visible only in sura / sura-mock modes)
     this.suraStatusText = this.add
-      .text(cx, jugarY + 56, "", {
+      .text(cx, jugarY + 66, "", {
         fontFamily: FONT, fontSize: "19px", color: "#7ec8e3",
       })
       .setOrigin(0.5)
@@ -128,12 +128,12 @@ export class MenuScene extends Phaser.Scene {
     fetchLeaderboard().then(populate).catch(() => {});
 
     const rankBg = this.add
-      .rectangle(cx, rankBtnY, 340, 44, 0x08142b, 1)
+      .rectangle(cx, rankBtnY, 390, 52, 0x08142b, 1)
       .setStrokeStyle(1.5, C_CYAN, 0.35)
       .setInteractive({ useHandCursor: true });
     const rankTxt = this.add
       .text(cx, rankBtnY, t("leaderboard_view_ranking"), {
-        fontFamily: FONT, fontSize: "21px", color: C_CYAN_HEX,
+        fontFamily: FONT, fontSize: "24px", color: C_CYAN_HEX,
       })
       .setOrigin(0.5);
     rankBg.on("pointerover",  () => rankBg.setStrokeStyle(1.5, C_CYAN, 0.75));
@@ -143,7 +143,7 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start("LeaderboardScene");
     });
 
-    const div2      = this.buildDivider(cx, div2Y, 420);
+    const div2      = this.buildDivider(cx, div2Y, 490);
     const langChips = this.buildLangChips(cx, langY);
     const version = this.add
       .text(cx, verY, t("menu_version"), {
@@ -151,7 +151,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const muteBtn = this.buildMuteButton(cx + 220, verY);
+    const muteBtn = this.buildMuteButton(cx + 250, verY);
 
     const w0: FadeTarget[] = [panel];
     const w1: FadeTarget[] = [glow, pengu, rush];
@@ -348,7 +348,7 @@ export class MenuScene extends Phaser.Scene {
   private buildSubtitle(cx: number, y: number, text: string): Phaser.GameObjects.Text {
     return this.add
       .text(cx, y, text, {
-        fontFamily: FONT, fontSize: "26px", color: "#7ec8e3",
+        fontFamily: FONT, fontSize: "32px", color: "#7ec8e3",
         align: "center", lineSpacing: 7,
       })
       .setOrigin(0.5);
@@ -394,7 +394,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildBadge(cx: number, cy: number, score: number, badgeLabel: string): FadeTarget[] {
-    const bw = 500, bh = 82;
+    const bw = 570, bh = 96;
 
     const g = this.add.graphics();
     g.fillStyle(C_BADGE, 1);
@@ -403,13 +403,13 @@ export class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(cx - bw / 2, cy - bh / 2, bw, bh, 10);
 
     const label = this.add
-      .text(cx, cy - 14, badgeLabel, {
+      .text(cx, cy - 17, badgeLabel, {
         fontFamily: FONT, fontSize: "19px", color: C_GOLD_HEX,
       })
       .setOrigin(0.5);
 
     const scoreText = this.add
-      .text(cx, cy + 17, `${score}`, {
+      .text(cx, cy + 20, `${score}`, {
         fontFamily: FONT, fontSize: "28px", color: "#ffffff", fontStyle: "bold",
       })
       .setOrigin(0.5);
@@ -469,7 +469,7 @@ export class MenuScene extends Phaser.Scene {
     const rowCount = 3;
     const targets: FadeTarget[] = [];
 
-    targets.push(this.buildDivider(cx, divY, 420));
+    targets.push(this.buildDivider(cx, divY, 490));
 
     const rowBgs:    Phaser.GameObjects.Graphics[] = [];
     const rowRanks:  Phaser.GameObjects.Text[]     = [];
@@ -483,20 +483,20 @@ export class MenuScene extends Phaser.Scene {
       rowBgs.push(bg);
       targets.push(bg);
 
-      const rank = this.add.text(cx - 230, rowY, `${i + 1}`, {
-        fontFamily: FONT, fontSize: "17px", color: "#475569",
+      const rank = this.add.text(cx - 265, rowY, `${i + 1}`, {
+        fontFamily: FONT, fontSize: "22px", color: "#475569",
       }).setOrigin(1, 0.5);
       rowRanks.push(rank);
       targets.push(rank);
 
-      const name = this.add.text(cx - 215, rowY, "···", {
-        fontFamily: FONT, fontSize: "17px", color: "#94a3b8",
+      const name = this.add.text(cx - 250, rowY, "···", {
+        fontFamily: FONT, fontSize: "22px", color: "#94a3b8",
       }).setOrigin(0, 0.5);
       rowNames.push(name);
       targets.push(name);
 
-      const score = this.add.text(cx + 230, rowY, "", {
-        fontFamily: FONT, fontSize: "17px", color: "#ffffff", fontStyle: "bold",
+      const score = this.add.text(cx + 265, rowY, "", {
+        fontFamily: FONT, fontSize: "22px", color: "#ffffff", fontStyle: "bold",
       }).setOrigin(1, 0.5);
       rowScores.push(score);
       targets.push(score);
@@ -515,7 +515,7 @@ export class MenuScene extends Phaser.Scene {
         if (isMe) {
           const rowY = rowStartY + i * rowSpacing;
           rowBgs[i].fillStyle(C_JUGAR, 0.14);
-          rowBgs[i].fillRoundedRect(cx - 248, rowY - 12, 496, 24, 4);
+          rowBgs[i].fillRoundedRect(cx - 284, rowY - 14, 568, 28, 4);
         }
         rowRanks[i].setColor(isMe ? C_CYAN_HEX : "#475569");
         rowNames[i]
