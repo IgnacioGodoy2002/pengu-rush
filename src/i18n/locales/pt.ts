@@ -8,6 +8,10 @@ export const pt: Record<TranslationKey, string> = {
   menu_play:                "JOGAR",
   menu_how_to_play:         "COMO JOGAR",
   menu_version:             "MVP v1.0",
+  leaderboard_title:        "🏆 TOP JOGADORES",
+  leaderboard_you:          "você",
+  leaderboard_view_ranking: "VER RANKING",
+  leaderboard_back:         "← VOLTAR",
 
   // ── Estado SURA (MenuScene) ───────────────────────────────────────────────
   sura_waiting:             "Aguardando sessão SURA...",

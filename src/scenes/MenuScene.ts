@@ -8,6 +8,8 @@ import { getSuraService } from "../integration/sura/SuraIntegrationService";
 import type { SuraIntegrationState, SuraServiceEvent } from "../integration/sura/SuraTypes";
 import { t, I18nService } from "../i18n";
 import type { Locale, TranslationKey } from "../i18n";
+import { fetchLeaderboard } from "../services/LeaderboardService";
+import type { LeaderboardEntry } from "../services/LeaderboardService";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C_BG_HEX    = "#040d1a";
@@ -23,7 +25,7 @@ const C_COMO_BORD = 0x4a7fa5;
 
 // ─── Panel geometry ───────────────────────────────────────────────────────────
 const PANEL_W = 620;
-const PANEL_H = 880;
+const PANEL_H = 1040;
 const PANEL_R = 18;
 
 type FadeTarget =
@@ -63,7 +65,7 @@ export class MenuScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
     const cx      = width / 2;
-    const panelCY = height * 0.492;
+    const panelCY = height * 0.48;
     const top     = panelCY - PANEL_H / 2;
 
     this.cameras.main.setBackgroundColor(C_BG_HEX);
@@ -74,16 +76,20 @@ export class MenuScene extends Phaser.Scene {
     const panel = this.buildPanel(cx, panelCY);
     const glow  = this.buildGlow(cx, top + 155);
 
-    const titleY   = top + 118;
-    const rushY    = titleY  + 100;
-    const subY     = rushY   + 108;
-    const div1Y    = subY    + 66;
-    const badgeY   = div1Y   + 70;
-    const jugarY   = badgeY  + 132;
-    const comoY    = jugarY  + 115;
-    const div2Y    = comoY   + 80;
-    const langY    = div2Y   + 30;
-    const verY     = langY   + 36;
+    const titleY       = top + 118;
+    const rushY        = titleY      + 100;
+    const subY         = rushY       + 108;
+    const div1Y        = subY        + 66;
+    const badgeY       = div1Y       + 70;
+    const jugarY       = badgeY      + 132;
+    const comoY        = jugarY      + 115;
+    const top3DivY     = comoY       + 56;   // thin divider above TOP 3
+    const top3RowY0    = top3DivY    + 24;   // first row center
+    const TOP3_SPACING = 26;
+    const rankBtnY     = top3RowY0   + 2 * TOP3_SPACING + 40;  // "VER RANKING"
+    const div2Y        = rankBtnY    + 50;
+    const langY        = div2Y       + 28;
+    const verY         = langY       + 32;
 
     const pengu = this.buildPengu(cx, titleY);
     const rush  = this.buildRush(cx, rushY);
@@ -116,6 +122,27 @@ export class MenuScene extends Phaser.Scene {
       .setAlpha(0)
       .setDepth(1);
 
+    const { targets: lbTargets, populate } = this.buildLeaderboard(
+      cx, top3DivY, top3RowY0, TOP3_SPACING,
+    );
+    fetchLeaderboard().then(populate).catch(() => {});
+
+    const rankBg = this.add
+      .rectangle(cx, rankBtnY, 340, 44, 0x08142b, 1)
+      .setStrokeStyle(1.5, C_CYAN, 0.35)
+      .setInteractive({ useHandCursor: true });
+    const rankTxt = this.add
+      .text(cx, rankBtnY, t("leaderboard_view_ranking"), {
+        fontFamily: FONT, fontSize: "21px", color: C_CYAN_HEX,
+      })
+      .setOrigin(0.5);
+    rankBg.on("pointerover",  () => rankBg.setStrokeStyle(1.5, C_CYAN, 0.75));
+    rankBg.on("pointerout",   () => rankBg.setStrokeStyle(1.5, C_CYAN, 0.35));
+    rankBg.on("pointerdown",  () => {
+      SoundEffectsManager.play(this, "sfx-click");
+      this.scene.start("LeaderboardScene");
+    });
+
     const div2      = this.buildDivider(cx, div2Y, 420);
     const langChips = this.buildLangChips(cx, langY);
     const version = this.add
@@ -129,7 +156,7 @@ export class MenuScene extends Phaser.Scene {
     const w0: FadeTarget[] = [panel];
     const w1: FadeTarget[] = [glow, pengu, rush];
     const w2: FadeTarget[] = [sub, div1, ...badge];
-    const w3: FadeTarget[] = [...[jugarBg, jugarTxt], ...como, div2, ...langChips, version, ...muteBtn];
+    const w3: FadeTarget[] = [...[jugarBg, jugarTxt], ...como, ...lbTargets, rankBg, rankTxt, div2, ...langChips, version, ...muteBtn];
 
     for (const o of [...w0, ...w1, ...w2, ...w3]) o.setAlpha(0);
 
@@ -431,6 +458,76 @@ export class MenuScene extends Phaser.Scene {
       x += chipW + gap;
     }
     return result;
+  }
+
+  private buildLeaderboard(
+    cx: number,
+    divY: number,
+    rowStartY: number,
+    rowSpacing: number,
+  ): { targets: FadeTarget[]; populate: (entries: LeaderboardEntry[]) => void } {
+    const rowCount = 3;
+    const targets: FadeTarget[] = [];
+
+    targets.push(this.buildDivider(cx, divY, 420));
+
+    const rowBgs:    Phaser.GameObjects.Graphics[] = [];
+    const rowRanks:  Phaser.GameObjects.Text[]     = [];
+    const rowNames:  Phaser.GameObjects.Text[]     = [];
+    const rowScores: Phaser.GameObjects.Text[]     = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      const rowY = rowStartY + i * rowSpacing;
+
+      const bg = this.add.graphics();
+      rowBgs.push(bg);
+      targets.push(bg);
+
+      const rank = this.add.text(cx - 230, rowY, `${i + 1}`, {
+        fontFamily: FONT, fontSize: "17px", color: "#475569",
+      }).setOrigin(1, 0.5);
+      rowRanks.push(rank);
+      targets.push(rank);
+
+      const name = this.add.text(cx - 215, rowY, "···", {
+        fontFamily: FONT, fontSize: "17px", color: "#94a3b8",
+      }).setOrigin(0, 0.5);
+      rowNames.push(name);
+      targets.push(name);
+
+      const score = this.add.text(cx + 230, rowY, "", {
+        fontFamily: FONT, fontSize: "17px", color: "#ffffff", fontStyle: "bold",
+      }).setOrigin(1, 0.5);
+      rowScores.push(score);
+      targets.push(score);
+    }
+
+    const populate = (entries: LeaderboardEntry[]) => {
+      for (let i = 0; i < rowCount; i++) {
+        const entry = entries[i];
+        if (!entry) {
+          rowNames[i].setText("").setVisible(false);
+          rowScores[i].setText("").setVisible(false);
+          rowRanks[i].setVisible(false);
+          continue;
+        }
+        const isMe = entry.isCurrentPlayer ?? false;
+        if (isMe) {
+          const rowY = rowStartY + i * rowSpacing;
+          rowBgs[i].fillStyle(C_JUGAR, 0.14);
+          rowBgs[i].fillRoundedRect(cx - 248, rowY - 12, 496, 24, 4);
+        }
+        rowRanks[i].setColor(isMe ? C_CYAN_HEX : "#475569");
+        rowNames[i]
+          .setText(isMe ? `● ${entry.alias}  (${t("leaderboard_you")})` : entry.alias)
+          .setColor(isMe ? C_CYAN_HEX : "#94a3b8");
+        rowScores[i]
+          .setText(entry.score.toLocaleString())
+          .setColor(isMe ? C_CYAN_HEX : "#ffffff");
+      }
+    };
+
+    return { targets, populate };
   }
 
   private buildButton(

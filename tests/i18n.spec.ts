@@ -6,14 +6,14 @@ const LOCALE_KEY = "pengu-rush:locale";
 // With viewport exactly 720×1280 and autoCenter:CENTER_BOTH the canvas
 // sits at CSS (0,0), so Phaser coords == CSS pixel coords.
 //
-// Computed from MenuScene layout:
-//   panelCY=629.76, top=189.76, rushY=407.76, ..., langY=1008.76
+// Computed from MenuScene layout (panelCY=614.40, top=94.40, PANEL_H=1040):
+//   comoY≈803.4, TOP3+rankBtn section, langY≈1053.4
 //   totalW=172 (3×52 + 2×8), startX=360-86=274
 //   ES: kx=300  EN: kx=360  PT: kx=420
 const CHIPS = {
-  es: { x: 300, y: 1009 },
-  en: { x: 360, y: 1009 },
-  pt: { x: 420, y: 1009 },
+  es: { x: 300, y: 1053 },
+  en: { x: 360, y: 1053 },
+  pt: { x: 420, y: 1053 },
 } as const;
 
 /** Resolves when I18nService sets window.__penguLocale__ (fires at bundle load). */
