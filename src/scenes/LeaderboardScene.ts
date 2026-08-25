@@ -23,11 +23,21 @@ const PANEL_H  = 920;
 const PANEL_R  = 18;
 const N_ROWS   = 12;
 const ROW_H    = 48;
-const MEDALS   = ["🥇", "🥈", "🥉"];
+
+// ─── Medal icon (drawn, not emoji — renders identically everywhere and
+// matches the app's own hand-drawn "badge" look instead of relying on the
+// OS/browser's emoji glyph set) ─────────────────────────────────────────────
+const MEDAL_R = 12;
+const MEDAL_COLORS: { fill: number; rim: number; ribbon: number; shine: number }[] = [
+  { fill: 0xffc93c, rim: 0xb8860b, ribbon: 0xb8860b, shine: 0xfff3c4 }, // gold
+  { fill: 0xd9dee3, rim: 0x8a939c, ribbon: 0x8a939c, shine: 0xf3f5f7 }, // silver
+  { fill: 0xcd7f32, rim: 0x8b5a2b, ribbon: 0x8b5a2b, shine: 0xe8b27d }, // bronze
+];
 
 type FadeTarget =
   | Phaser.GameObjects.Graphics
   | Phaser.GameObjects.Text
+  | Phaser.GameObjects.Container
   | Phaser.GameObjects.Rectangle;
 
 export class LeaderboardScene extends Phaser.Scene {
@@ -110,11 +120,11 @@ export class LeaderboardScene extends Phaser.Scene {
     cx: number,
     rowStartY: number,
   ): { targets: FadeTarget[]; populate: (entries: LeaderboardEntry[]) => void } {
-    const targets:    FadeTarget[]                        = [];
-    const rowBgs:     Phaser.GameObjects.Graphics[]       = [];
-    const rowLefts:   Phaser.GameObjects.Text[]           = [];
-    const rowNames:   Phaser.GameObjects.Text[]           = [];
-    const rowScores:  Phaser.GameObjects.Text[]           = [];
+    const targets:    FadeTarget[]                                    = [];
+    const rowBgs:     Phaser.GameObjects.Graphics[]                   = [];
+    const rowLefts:   (Phaser.GameObjects.Text | Phaser.GameObjects.Container)[] = [];
+    const rowNames:   Phaser.GameObjects.Text[]                       = [];
+    const rowScores:  Phaser.GameObjects.Text[]                       = [];
 
     for (let i = 0; i < N_ROWS; i++) {
       const rowY = rowStartY + i * ROW_H;
@@ -123,11 +133,18 @@ export class LeaderboardScene extends Phaser.Scene {
       rowBgs.push(bg);
       targets.push(bg);
 
-      const left = this.add
-        .text(cx - 258, rowY, `${i + 1}`, {
-          fontFamily: FONT, fontSize: "20px", color: "#475569",
-        })
-        .setOrigin(0.5, 0.5);
+      // Top 3 get a drawn medal badge instead of a plain rank number —
+      // drawn with Graphics (same technique as the rest of the app's
+      // panels/badges) rather than an emoji glyph, so it renders
+      // identically across every OS/browser instead of depending on
+      // whatever emoji font happens to be installed.
+      const left = i < 3
+        ? this.buildMedalIcon(cx - 258, rowY, i)
+        : this.add
+            .text(cx - 258, rowY, `${i + 1}`, {
+              fontFamily: FONT, fontSize: "20px", color: "#475569",
+            })
+            .setOrigin(0.5, 0.5);
       rowLefts.push(left);
       targets.push(left);
 
@@ -163,10 +180,13 @@ export class LeaderboardScene extends Phaser.Scene {
           rowBgs[i].fillStyle(C_JUGAR, 0.14);
           rowBgs[i].fillRoundedRect(cx - 280, rowY - 22, 560, 44, 4);
         }
-        if (i < 3) {
-          rowLefts[i].setText(MEDALS[i]).setFontSize(22).setColor(isMe ? C_CYAN_HEX : C_GOLD_HEX);
-        } else {
-          rowLefts[i].setText(`${i + 1}`).setColor(isMe ? C_CYAN_HEX : "#475569");
+        // The medal's colour is fixed by rank (gold/silver/bronze), not by
+        // who holds it — only the plain-number ranks (4+) still tint cyan
+        // for the current player, matching the name/score columns.
+        if (i >= 3) {
+          (rowLefts[i] as Phaser.GameObjects.Text)
+            .setText(`${i + 1}`)
+            .setColor(isMe ? C_CYAN_HEX : "#475569");
         }
         rowNames[i]
           .setText(isMe ? `● ${entry.alias}  (${t("leaderboard_you")})` : entry.alias)
@@ -178,6 +198,32 @@ export class LeaderboardScene extends Phaser.Scene {
     };
 
     return { targets, populate };
+  }
+
+  private buildMedalIcon(cx: number, cy: number, tier: number): Phaser.GameObjects.Container {
+    const { fill, rim, ribbon, shine } = MEDAL_COLORS[tier];
+    const g = this.add.graphics();
+
+    // Ribbon tails, poking out from behind the disc.
+    g.fillStyle(ribbon, 1);
+    g.fillTriangle(-5, 2, -11, 15, 1, 6);
+    g.fillTriangle(5, 2, 11, 15, -1, 6);
+
+    // Disc: rim, then fill, then a soft shine highlight.
+    g.fillStyle(rim, 1);
+    g.fillCircle(0, 0, MEDAL_R);
+    g.fillStyle(fill, 1);
+    g.fillCircle(0, 0, MEDAL_R - 2);
+    g.fillStyle(shine, 0.85);
+    g.fillCircle(-3.5, -3.5, 2.6);
+
+    const label = this.add
+      .text(0, 0.5, `${tier + 1}`, {
+        fontFamily: FONT, fontSize: "13px", color: "#3a2a10", fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    return this.add.container(cx, cy, [g, label]);
   }
 
   // ─── Private builders ─────────────────────────────────────────────────────
