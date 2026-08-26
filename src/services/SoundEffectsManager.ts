@@ -19,7 +19,7 @@ export type SoundEffectKey =
 // Asset paths — used in BootScene preload (currently commented out).
 // When a file is added to public/audio/sfx/, uncomment the matching line in BootScene.
 export const SFX_PATHS: Record<SoundEffectKey, string> = {
-  "sfx-shot":           "audio/sfx/disparo.ogg",
+  "sfx-shot":           "audio/sfx/laser.ogg",
   "sfx-hit":            "audio/sfx/impacto.ogg",
   "sfx-destroy-small":  "audio/sfx/destruccion-chico.ogg",
   "sfx-destroy-medium": "audio/sfx/destruccion-mediano.ogg",
