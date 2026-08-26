@@ -17,7 +17,7 @@ const C_SEC_BORD = 0x4a7fa5;
 
 // ─── Panel geometry ────────────────────────────────────────────────────────────
 const PANEL_W = 640;
-const PANEL_H = 1060;
+const PANEL_H = 1090;
 const PANEL_R = 18;
 
 type FadeTarget =
@@ -59,8 +59,8 @@ export class InstructionsScene extends Phaser.Scene {
     const divY1    = ctrlY3   + 34;        // 435
 
     const objLblY  = divY1   + 24;         // 459
-    const objTxtY  = objLblY + 32;         // 491
-    const divY2    = objTxtY + 52;         // 543
+    const objTxtY  = objLblY + 46;         // 505
+    const divY2    = objTxtY + 52;         // 557
 
     const metLblY  = divY2   + 24;         // 567
     const metY1    = metLblY + 38;         // 605
@@ -69,8 +69,8 @@ export class InstructionsScene extends Phaser.Scene {
     const divY3    = metY3   + 32;         // 727
 
     const ptLblY   = divY3  + 24;          // 713
-    const ptTxtY   = ptLblY + 32;          // 745
-    const divY4    = ptTxtY + 52;          // 797
+    const ptTxtY   = ptLblY + 46;          // 759
+    const divY4    = ptTxtY + 52;          // 811
 
     const shLblY   = divY4  + 24;          // 821
     const shTxt1Y  = shLblY + 34;          // 855
