@@ -9,7 +9,7 @@ export const LOCAL_SURA_REWARD_CONFIG = {
   scoreUnit:     300,
   pointsPerUnit: 50,
   currencyLabel: "SURA Points",
-  popupEnabled:  true,
+  popupEnabled:  false,
 } as const;
 
 /**
