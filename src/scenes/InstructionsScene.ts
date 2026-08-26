@@ -17,7 +17,7 @@ const C_SEC_BORD = 0x4a7fa5;
 
 // ─── Panel geometry ────────────────────────────────────────────────────────────
 const PANEL_W = 640;
-const PANEL_H = 1170;
+const PANEL_H = 1060;
 const PANEL_R = 18;
 
 type FadeTarget =
@@ -78,11 +78,7 @@ export class InstructionsScene extends Phaser.Scene {
     const shTxt3Y  = shTxt2Y + 26;         // 907
     const divY5    = shTxt3Y + 24;         // 931
 
-    const pauLblY  = divY5  + 24;          // 955
-    const pauTxt1Y = pauLblY + 30;         // 985
-    const pauTxt2Y = pauTxt1Y + 26;        // 1011
-    const divY6    = pauTxt2Y + 24;        // 1035
-    const btnY     = divY6  + 54;          // 1089
+    const btnY     = divY5  + 68;          // 999
 
     // ─── Header ───────────────────────────────────────────────────────────
     const como = this.add
@@ -180,24 +176,7 @@ export class InstructionsScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0);
 
-    const div5 = this.buildDivider(cx, divY5, 560);
-
-    // ─── PAUSA Y AUDIO ────────────────────────────────────────────────────
-    const pauLbl = this.buildSectionLabel(cx, pauLblY, t("instr_section_pause"));
-
-    const pauTxt1 = this.add
-      .text(cx, pauTxt1Y, t("instr_pause_line1"), {
-        fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center",
-      })
-      .setOrigin(0.5);
-
-    const pauTxt2 = this.add
-      .text(cx, pauTxt2Y, t("instr_pause_line2"), {
-        fontFamily: FONT, fontSize: "21px", color: "#94a3b8", align: "center",
-      })
-      .setOrigin(0.5);
-
-    const div6 = this.buildDivider(cx, divY6, 440);
+    const div5 = this.buildDivider(cx, divY5, 440);
 
     // ─── Button ───────────────────────────────────────────────────────────
     const { bg: btnBg, text: btnTxt } = createButton({
@@ -225,7 +204,6 @@ export class InstructionsScene extends Phaser.Scene {
       metLbl, met1g, met1t, met2g, met2t, met3g, met3t, div3,
       ptLbl, ptTxt, div4,
       shLbl, shIcon, shTxt1, shTxt2, shTxt3, div5,
-      pauLbl, pauTxt1, pauTxt2, div6,
     ];
     const w3: FadeTarget[] = [btnBg, btnTxt];
 
