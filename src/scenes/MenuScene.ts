@@ -483,9 +483,9 @@ export class MenuScene extends Phaser.Scene {
       rowBgs.push(bg);
       targets.push(bg);
 
-      const rank = this.add.text(cx - 265, rowY, `${i + 1}`, {
-        fontFamily: FONT, fontSize: "22px", color: "#475569",
-      }).setOrigin(1, 0.5);
+      const rank = this.add.text(cx - 258, rowY, ["🥇", "🥈", "🥉"][i], {
+        fontFamily: FONT, fontSize: "20px", color: "#ffffff",
+      }).setOrigin(0.5, 0.5);
       rowRanks.push(rank);
       targets.push(rank);
 
@@ -517,7 +517,7 @@ export class MenuScene extends Phaser.Scene {
           rowBgs[i].fillStyle(C_JUGAR, 0.14);
           rowBgs[i].fillRoundedRect(cx - 284, rowY - 14, 568, 28, 4);
         }
-        rowRanks[i].setColor(isMe ? C_CYAN_HEX : "#475569");
+        rowRanks[i].setVisible(true);
         rowNames[i]
           .setText(isMe ? `● ${entry.alias}  (${t("leaderboard_you")})` : entry.alias)
           .setColor(isMe ? C_CYAN_HEX : "#94a3b8");
