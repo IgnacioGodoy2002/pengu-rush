@@ -86,13 +86,25 @@ export class SuraBridge {
     if (!this.config.isEmbedded)           return;
     if (!this.config.parentOrigin)         return;
 
-    const envelope: SuraEnvelope = {
-      source:  "sura-minigames",
-      version: 1,
-      type,
-      payload,
-    };
+    const envelope: SuraEnvelope = { type, payload };
     window.parent.postMessage(envelope, this.config.parentOrigin);
+  }
+
+  /**
+   * Sends the game-complete result to the host. Unlike sendToParent, this is
+   * NOT enveloped — the host (MiniGamePlayerScreen.web.tsx) listens for a flat
+   * { type: 'GAME_COMPLETE', sessionId, score, provider } message, not
+   * { type, payload }.
+   */
+  sendCompletion(input: { sessionId: string; score: number; provider: string }): void {
+    if (this.config.mode === "standalone") return;
+    if (!this.config.isEmbedded)           return;
+    if (!this.config.parentOrigin)         return;
+
+    window.parent.postMessage(
+      { type: SURA_MSG.COMPLETED, ...input },
+      this.config.parentOrigin,
+    );
   }
 
   // ─── Private ──────────────────────────────────────────────────────────────
@@ -125,8 +137,6 @@ function isValidEnvelope(msg: unknown): msg is SuraEnvelope {
   if (typeof msg !== "object" || msg === null) return false;
   const m = msg as Record<string, unknown>;
   return (
-    m["source"]  === "sura-minigames" &&
-    m["version"] === 1 &&
     typeof m["type"]    === "string" &&
     typeof m["payload"] === "object" &&
     m["payload"] !== null
