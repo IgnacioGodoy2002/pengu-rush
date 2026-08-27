@@ -41,12 +41,14 @@ export type SuraIntegrationState =
   | "unauthorized"       // 401/403 from validateSession or startSession
   | "error";             // network error or unexpected server failure
 
-// ─── Session context (camelCase internally; snake_case in postMessage) ────────
+// ─── Session context ────────────────────────────────────────────────────────
+//
+// gameId is not sent by the host — it's the game's own known SURA_CONFIG.gameId.
+// The host has no concept of playerId in its INIT payload either.
 
 export type SuraSessionContext = {
   token:      string;
   sessionId:  string;
-  playerId:   number;
   gameId:     string;
   nickname?:  string;
 };
@@ -87,19 +89,22 @@ export type CompletedSession = {
 
 // ─── postMessage event names ──────────────────────────────────────────────────
 //
-// PROVISIONAL — names have NOT been confirmed by SURA.
+// Confirmed against the real host contract in sura-universal
+// (MiniGamePlayerScreen.web.tsx): INIT_GAME is sent as { type, payload }, and
+// the host listens for a completion message that is NOT enveloped — just
+// { type: 'GAME_COMPLETE', sessionId, score, provider } flat on the message.
 // All event strings are centralised here. Do NOT reference raw strings anywhere.
 
 export const SURA_MSG = {
   // Host (SURA app) → game (iframe)
-  INIT:             "SURA_MINIGAME_INIT",
+  INIT:             "INIT_GAME",
   PAUSE:            "SURA_MINIGAME_PAUSE",
   RESUME:           "SURA_MINIGAME_RESUME",
   // Game (iframe) → host (SURA app)
   READY:            "MINIGAME_READY",
   SESSION_ACCEPTED: "MINIGAME_SESSION_ACCEPTED",
   STARTED:          "MINIGAME_STARTED",
-  COMPLETED:        "MINIGAME_COMPLETED",
+  COMPLETED:        "GAME_COMPLETE",
   ERROR:            "MINIGAME_ERROR",
   EXIT_REQUESTED:   "MINIGAME_EXIT_REQUESTED",
 } as const;
@@ -107,22 +112,26 @@ export const SURA_MSG = {
 export type SuraMsgType = typeof SURA_MSG[keyof typeof SURA_MSG];
 
 // ─── postMessage envelope ─────────────────────────────────────────────────────
+//
+// Only inbound host → game messages use this { type, payload } shape. The
+// outbound completion message to the host is flat (see SuraBridge.sendCompletion).
 
 export type SuraEnvelope = {
-  source:  "sura-minigames";
-  version: 1;
   type:    SuraMsgType;
   payload: Record<string, unknown>;
 };
 
-// ─── Inbound payload for SURA_MINIGAME_INIT ───────────────────────────────────
+// ─── Inbound payload for INIT_GAME ─────────────────────────────────────────────
+//
+// Matches buildInitMessage() in MiniGamePlayerScreen.web.tsx — camelCase,
+// no player_id/game_id (the host doesn't send them).
 
 export type InitPayload = {
-  token:      string;
-  session_id: string;
-  player_id:  number;
-  game_id:    string;
-  nickname?:  string;
+  token:               string;
+  sessionId:           string;
+  username?:           string;
+  referral?:           string;
+  referredByNickname?: string;
 };
 
 // ─── Events emitted by SuraIntegrationService to scene subscribers ────────────

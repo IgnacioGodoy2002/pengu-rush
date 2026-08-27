@@ -123,21 +123,13 @@ export class SuraIntegrationService {
     if (this.state !== "playing") return;
     if (!this.context) return;
 
-    this.bridge.sendToParent(SURA_MSG.COMPLETED, {
-      session_id:   this.context.sessionId,
-      game_id:      this.context.gameId,
-      score:        result.score,
-      player_alias: this.context.nickname ?? null,
-      stats: {
-        level:               result.level,
-        survivedMs:          result.survivedMs,
-        meteorsDestroyed:    result.meteorsDestroyed,
-        isNewRecord:         result.isNewRecord,
-        // Local reward preview — SURA backend is the authority on actual points.
-        estimatedSuraPoints: result.estimatedSuraPoints,
-        rewardScoreUnit:     result.rewardScoreUnit,
-        rewardPointsPerUnit: result.rewardPointsPerUnit,
-      },
+    // Flat, unenveloped — matches what MiniGamePlayerScreen.web.tsx listens for.
+    // Stats beyond score are local-only; the SURA backend is the authority on
+    // actual points and has no field to receive them via this message.
+    this.bridge.sendCompletion({
+      sessionId: this.context.sessionId,
+      score:     result.score,
+      provider:  "tingz",
     });
     this.setState("completed");
   }
@@ -179,32 +171,30 @@ export class SuraIntegrationService {
     ];
     if (!resettable.includes(this.state)) return;
 
-    // Validate required INIT fields.
+    // Validate required INIT fields. The host doesn't send player_id/game_id
+    // (see InitPayload) — gameId is filled in from our own SURA_CONFIG.
     const p = payload as Partial<InitPayload>;
-    const token      = typeof p.token      === "string" ? p.token      : null;
-    const session_id = typeof p.session_id === "string" ? p.session_id : null;
-    const player_id  = typeof p.player_id  === "number" ? p.player_id  : null;
-    const game_id    = typeof p.game_id    === "string" ? p.game_id    : null;
+    const token     = typeof p.token     === "string" ? p.token     : null;
+    const sessionId = typeof p.sessionId === "string" ? p.sessionId : null;
 
-    if (!token || !session_id || player_id === null || !game_id) {
+    if (!token || !sessionId) {
       this.setState("error");
-      this.bridge.sendToParent(SURA_MSG.ERROR, { message: "Invalid SURA_MINIGAME_INIT payload." });
+      this.bridge.sendToParent(SURA_MSG.ERROR, { message: "Invalid INIT_GAME payload." });
       return;
     }
 
     // Store context in memory only — never logged, never persisted.
     this.context = {
       token,
-      sessionId: session_id,
-      playerId:  player_id,
-      gameId:    game_id,
-      nickname:  typeof p.nickname === "string" ? p.nickname : undefined,
+      sessionId,
+      gameId:   SURA_CONFIG.gameId,
+      nickname: typeof p.username === "string" ? p.username : undefined,
     };
 
     // Acknowledge receipt of the context.
     this.bridge.sendToParent(SURA_MSG.SESSION_ACCEPTED, {
-      session_id,
-      game_id,
+      session_id: sessionId,
+      game_id:    SURA_CONFIG.gameId,
     });
 
     // parent-submit: context is trusted as-is — no backend validation needed.
