@@ -67,6 +67,16 @@ export class SuraIntegrationService {
     return this.state;
   }
 
+  /** Bearer token from the host's INIT_GAME payload, or null if not (yet) available. */
+  getSessionToken(): string | null {
+    return this.context?.token ?? null;
+  }
+
+  /** The player's own display name, as sent by the host — used to flag "me" in a leaderboard. */
+  getNickname(): string | null {
+    return this.context?.nickname ?? null;
+  }
+
   /**
    * Called once from BootScene after Phaser initialises.
    * Attaches the postMessage bridge and notifies the host that the game
