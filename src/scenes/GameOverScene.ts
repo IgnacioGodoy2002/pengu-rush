@@ -4,7 +4,7 @@ import { COLORS, FONT } from "../constants/theme";
 import { MusicManager } from "../services/MusicManager";
 import { SoundEffectsManager } from "../services/SoundEffectsManager";
 import { getSuraService } from "../integration/sura/SuraIntegrationService";
-import type { SuraIntegrationState, SuraServiceEvent, SuraServiceListener } from "../integration/sura/SuraTypes";
+import type { SuraServiceEvent, SuraServiceListener } from "../integration/sura/SuraTypes";
 import { LOCAL_SURA_REWARD_CONFIG, calcSuraPoints } from "../config/suraRewardConfig";
 import { t } from "../i18n";
 
@@ -31,9 +31,6 @@ export class GameOverScene extends Phaser.Scene {
     survivedMs: 0, meteorsDestroyed: 0, isNewRecord: false,
   };
 
-  // SURA score-submission tracking
-  private sendStatusText: Phaser.GameObjects.Text | null = null;
-  private retryBtn: { bg: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text } | null = null;
   private onSuraEvent: SuraServiceListener | null = null;
 
   // Buttons created by buildActionButtons — disabled while reward popup is open.
@@ -56,8 +53,6 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.sendStatusText = null;
-    this.retryBtn       = null;
     this.onSuraEvent    = null;
     this.actionBtnRefs  = [];
 
@@ -126,22 +121,6 @@ export class GameOverScene extends Phaser.Scene {
 
     this.addDivider(cx, 776, 540);
 
-    // ── SURA score submission status (visible only when embedded) ──────────
-    this.sendStatusText = this.add
-      .text(cx, 818, "", { fontFamily: FONT, fontSize: "20px", color: "#7ec8e3" })
-      .setOrigin(0.5)
-      .setAlpha(0);
-
-    // ── Retry button (no-op in parent-submit, kept hidden) ─────────────────
-    const retryBtnObj = createButton({
-      scene: this, x: cx, y: 855, width: 260, height: 44,
-      label: "REINTENTAR", bgColor: 0x7c3aed, fontSize: "22px",
-      onClick: () => this.retrySend(),
-    });
-    retryBtnObj.bg.setAlpha(0).disableInteractive();
-    retryBtnObj.text.setAlpha(0);
-    this.retryBtn = retryBtnObj;
-
     // ── Action buttons — disabled until reward popup is dismissed ──────────
     this.buildActionButtons(cx);
 
@@ -175,22 +154,15 @@ export class GameOverScene extends Phaser.Scene {
     }
     if (service.mode === "standalone") return;
 
-    // Subscribe to state changes so we can update the send-status label.
+    // If a fresh INIT_GAME arrives while sitting on this screen (e.g. the
+    // backoffice preview harness re-firing the handshake), return to the
+    // menu instead of leaving the player stuck on a dead session.
     this.onSuraEvent = (event: SuraServiceEvent) => {
-      if (event.type === "state-changed") {
-        this.updateSendStatus(event.state);
-        // If a fresh INIT_GAME arrives while sitting on this screen (e.g.
-        // the backoffice preview harness re-firing the handshake), return
-        // to the menu instead of leaving the player stuck on a dead session.
-        if (event.state === "ready") {
-          this.scene.start("MenuScene");
-        }
+      if (event.type === "state-changed" && event.state === "ready") {
+        this.scene.start("MenuScene");
       }
     };
     service.subscribe(this.onSuraEvent);
-
-    // Show initial status based on current state
-    this.updateSendStatus(service.getState());
 
     // Send MINIGAME_COMPLETED via postMessage.
     // estimatedSuraPoints is a local preview — SURA backend is authoritative.
@@ -204,39 +176,6 @@ export class GameOverScene extends Phaser.Scene {
       rewardScoreUnit:     LOCAL_SURA_REWARD_CONFIG.scoreUnit,
       rewardPointsPerUnit: LOCAL_SURA_REWARD_CONFIG.pointsPerUnit,
     });
-  }
-
-  private retrySend(): void {
-    // No-op in parent-submit: score is sent via postMessage in completeGameSession.
-  }
-
-  private updateSendStatus(state: SuraIntegrationState): void {
-    if (!this.sendStatusText) return;
-
-    type StatusCfg = { label: string; color: string; showRetry: boolean };
-    const STATUS: Partial<Record<SuraIntegrationState, StatusCfg>> = {
-      "completed":  { label: t("gameover_sura_sent"),  color: "#4ade80", showRetry: false },
-      "error":      { label: t("gameover_sura_error"), color: "#f87171", showRetry: false },
-    };
-
-    const cfg = STATUS[state];
-    if (!cfg) {
-      this.sendStatusText.setAlpha(0);
-      return;
-    }
-
-    this.sendStatusText.setText(cfg.label).setColor(cfg.color).setAlpha(1);
-
-    if (this.retryBtn) {
-      const alpha = cfg.showRetry ? 1 : 0;
-      this.retryBtn.bg.setAlpha(alpha);
-      this.retryBtn.text.setAlpha(alpha);
-      if (cfg.showRetry) {
-        this.retryBtn.bg.setInteractive({ useHandCursor: true });
-      } else {
-        this.retryBtn.bg.disableInteractive();
-      }
-    }
   }
 
   // ─── Reward popup ─────────────────────────────────────────────────────────
