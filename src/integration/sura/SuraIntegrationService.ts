@@ -110,6 +110,31 @@ export class SuraIntegrationService {
   }
 
   /**
+   * Asks the host for a new session by re-sending MINIGAME_READY — the same
+   * message that opens the handshake the first time. Per the host's
+   * contract, it re-sends INIT_GAME "when it receives your MINIGAME_READY",
+   * so this is also how a *second* session gets requested.
+   *
+   * Needed because after GAME_COMPLETE the state is "completed" and nothing
+   * else moves it back to "ready": MenuScene gates the JUGAR button on
+   * `state === "ready"`, so without this, returning to the menu after
+   * finishing a run leaves JUGAR permanently disabled — there's no reason
+   * for the host to volunteer a fresh INIT_GAME on its own, since nothing
+   * asked it to.
+   *
+   * No-op outside the states where asking again makes sense (mid-game, or
+   * already waiting for the first context).
+   */
+  requestFreshSession(): void {
+    if (SURA_CONFIG.mode === "standalone") return;
+    const resettable: SuraIntegrationState[] = ["completed", "error", "unauthorized"];
+    if (!resettable.includes(this.state)) return;
+
+    this.setState("waiting-context");
+    this.notifyReady();
+  }
+
+  /**
    * Subscribe to service events (state changes, host pause/resume).
    * Scenes should unsubscribe on their SHUTDOWN event.
    */
