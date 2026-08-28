@@ -9,10 +9,18 @@ import { GameOverScene } from "./scenes/GameOverScene";
 import { LeaderboardScene } from "./scenes/LeaderboardScene";
 import { CANVAS } from "./constants/theme";
 import { SPACE_BG_HEX } from "./scenes/SpaceBackground";
+import { initSuraService } from "./integration/sura/SuraIntegrationService";
 
 // Expose the canvas background color as a CSS custom property so style.css
 // can use it for the mobile letterbox override without duplicating the value.
 document.documentElement.style.setProperty("--space-bg", SPACE_BG_HEX);
+
+// Attaches the postMessage listener immediately, before Phaser boots. The
+// host sends INIT_GAME as soon as the iframe's `load` event fires — which
+// happens well before BootScene.preload() finishes loading audio/image
+// assets. Waiting until BootScene.create() to listen means the host's INIT
+// arrives before anyone is listening and is lost forever.
+initSuraService().initialize();
 
 const DEBUG_PHYSICS = false;
 

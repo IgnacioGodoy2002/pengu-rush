@@ -41,7 +41,7 @@ export class MockSuraApiClient implements ISuraApiClient {
       success: true,
       data: {
         session_id: context.sessionId,
-        player_id:  context.playerId,
+        player_id:  0,
         game_id:    context.gameId,
       },
       message: "Session validated (mock).",

@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { MusicManager } from "../services/MusicManager";
-import { initSuraService } from "../integration/sura/SuraIntegrationService";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -51,7 +50,6 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     MusicManager.init();
-    initSuraService().initialize();
     this.scene.start("MenuScene");
   }
 }
