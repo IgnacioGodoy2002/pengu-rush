@@ -144,7 +144,16 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: w2, alpha: 1, duration: 360, delay: 270, ease: "Quad.Out" });
     this.tweens.add({
       targets: w3, alpha: 1, duration: 360, delay: 400, ease: "Quad.Out",
-      onComplete: () => { if (import.meta.env.DEV) (window as any).__penguSceneReady__ = true; },
+      onComplete: () => {
+        if (import.meta.env.DEV) (window as any).__penguSceneReady__ = true;
+        // This tween just forced jugarBg/jugarTxt to alpha 1 regardless of
+        // SURA readiness — if a session isn't actually ready yet (or is
+        // stuck waiting for one, e.g. after returning here post-game), the
+        // button would look identical to enabled while disableInteractive()
+        // silently swallows every click. Re-sync the real visual + click
+        // state now that the entrance animation is done fighting over it.
+        this.resyncJugarButton();
+      },
     });
 
     this.setupSuraIntegration();
@@ -159,6 +168,18 @@ export class MenuScene extends Phaser.Scene {
 
   // ─── SURA integration ────────────────────────────────────────────────────
 
+  /** Re-applies the real SURA state's visuals after the entrance tween stomps them. */
+  private resyncJugarButton(): void {
+    let service: ReturnType<typeof getSuraService>;
+    try {
+      service = getSuraService();
+    } catch {
+      return;
+    }
+    if (service.mode === "standalone") return;
+    this.applySuraState(service.getState());
+  }
+
   private setupSuraIntegration(): void {
     let service: ReturnType<typeof getSuraService>;
     try {
@@ -167,6 +188,11 @@ export class MenuScene extends Phaser.Scene {
       return; // standalone fallback
     }
     if (service.mode === "standalone") return;
+
+    // Returning here after a completed (or errored) run — ask the host for
+    // a fresh session so JUGAR doesn't stay disabled forever. No-op if we're
+    // already waiting for one, mid-game, or this is the very first mount.
+    service.requestFreshSession();
 
     // Apply initial state immediately
     this.applySuraState(service.getState());
