@@ -113,7 +113,7 @@ export class MenuScene extends Phaser.Scene {
       () => this.scene.start("InstructionsScene"),
     );
 
-    // SURA status text (visible only in sura / sura-mock modes)
+    // SURA status text (visible only when embedded)
     this.suraStatusText = this.add
       .text(cx, jugarY + 66, "", {
         fontFamily: FONT, fontSize: "19px", color: "#7ec8e3",
@@ -251,7 +251,7 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
 
-    // sura / sura-mock: must start the session via the API before opening GameScene
+    // embedded: must send MINIGAME_STARTED before opening GameScene
     this.applySuraState("starting");
 
     service.startGameSession()

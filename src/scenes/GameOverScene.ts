@@ -126,7 +126,7 @@ export class GameOverScene extends Phaser.Scene {
 
     this.addDivider(cx, 776, 540);
 
-    // ── SURA score submission status (visible only in sura/sura-mock) ──────
+    // ── SURA score submission status (visible only when embedded) ──────────
     this.sendStatusText = this.add
       .text(cx, 818, "", { fontFamily: FONT, fontSize: "20px", color: "#7ec8e3" })
       .setOrigin(0.5)
@@ -179,7 +179,9 @@ export class GameOverScene extends Phaser.Scene {
     this.onSuraEvent = (event: SuraServiceEvent) => {
       if (event.type === "state-changed") {
         this.updateSendStatus(event.state);
-        // In sura-mock: when a new session arrives, auto-return to MenuScene.
+        // If a fresh INIT_GAME arrives while sitting on this screen (e.g.
+        // the backoffice preview harness re-firing the handshake), return
+        // to the menu instead of leaving the player stuck on a dead session.
         if (event.state === "ready") {
           this.scene.start("MenuScene");
         }
@@ -456,21 +458,6 @@ export class GameOverScene extends Phaser.Scene {
           try { getSuraService().requestExit(); } catch { /* ok */ }
         },
       }));
-      reg(createButton({
-        scene: this, x: cx, y: 1004, width: 440, height: 84,
-        label: t("gameover_menu"), bgColor: COLORS.btnSecondary, fontSize: "32px",
-        onClick: () => this.scene.start("MenuScene"),
-      }));
-      return;
-    }
-
-    if (mode === "sura-mock") {
-      this.add
-        .text(cx, 900, t("gameover_mock_hint"), {
-          fontFamily: FONT, fontSize: "22px", color: COLORS.muted,
-          align: "center", lineSpacing: 5,
-        })
-        .setOrigin(0.5);
       reg(createButton({
         scene: this, x: cx, y: 1004, width: 440, height: 84,
         label: t("gameover_menu"), bgColor: COLORS.btnSecondary, fontSize: "32px",

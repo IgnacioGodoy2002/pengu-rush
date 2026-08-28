@@ -1,5 +1,4 @@
 import { getSuraService } from "../integration/sura/SuraIntegrationService";
-import { SURA_CONFIG } from "../integration/sura/SuraRuntimeConfig";
 
 export type LeaderboardEntry = {
   alias:            string;
@@ -8,7 +7,8 @@ export type LeaderboardEntry = {
 };
 
 type ApiLeaderboardEntry = {
-  alias:      string;
+  position:   number;
+  alias:      string | null;
   best_score: number;
 };
 
@@ -20,7 +20,7 @@ type ApiLeaderboardResponse = {
 
 /**
  * Standalone / preview fallback — shown only when there's no real SURA
- * session to fetch a board from (e.g. `npm run dev` with no `?sura_mode`,
+ * session to fetch a board from (e.g. `npm run dev` opened alone in a tab,
  * or the standalone Vercel preview). Never shown once embedded.
  */
 const PREVIEW_ENTRIES: LeaderboardEntry[] = [
@@ -39,24 +39,31 @@ const PREVIEW_ENTRIES: LeaderboardEntry[] = [
 
 /**
  * Real leaderboard for this mini-game, via the PUBLIC (unauthenticated)
- * endpoint — the game runs in a sandboxed iframe with no real player
- * session (INIT_GAME only carries a launch-identification hash, not an
- * access token), so it can't call the authenticated leaderboard route.
- * Falls back to a static preview board in standalone mode, or if the fetch
- * fails, so the screen never renders empty. Doesn't need to wait for the
- * SURA "ready" handshake — no token required.
+ * endpoint — the game runs in a sandboxed iframe/WebView with no real player
+ * session (INIT_GAME only carries a launch-correlation hash, not an access
+ * token), so it can't call the authenticated leaderboard route.
+ *
+ * `gameId` and `apiBaseUrl` come from the host's INIT_GAME payload, not from
+ * build-time config — the same build has to work in every environment,
+ * including the native app, which has no fixed API host to hardcode.
+ *
+ * Falls back to a static preview board in standalone mode, before the
+ * handshake completes, or if the fetch fails, so the screen never renders
+ * empty.
  */
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   let service: ReturnType<typeof getSuraService> | null = null;
   try { service = getSuraService(); } catch { /* not initialised yet */ }
 
-  if (!service || service.mode === "standalone" || !SURA_CONFIG.apiBaseUrl) {
+  const gameId     = service?.getGameId() ?? null;
+  const apiBaseUrl = service?.getApiBaseUrl() ?? null;
+  if (!service || service.mode === "standalone" || !gameId || !apiBaseUrl) {
     return PREVIEW_ENTRIES;
   }
 
   try {
     const response = await fetch(
-      `${SURA_CONFIG.apiBaseUrl}/minigames/v1/games/${SURA_CONFIG.gameId}/leaderboard?per_page=12`,
+      `${apiBaseUrl}/minigames/v1/games/${gameId}/leaderboard?per_page=12`,
     );
     if (!response.ok) return PREVIEW_ENTRIES;
 
@@ -64,7 +71,9 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
     const myNickname = service.getNickname();
 
     return body.data.entries.map((entry) => ({
-      alias:           entry.alias,
+      // A player with no nickname comes back as `alias: null` — a generic
+      // placeholder, never an invented name.
+      alias:           entry.alias ?? `Player ${entry.position}`,
       score:           entry.best_score,
       isCurrentPlayer: myNickname !== null && entry.alias === myNickname,
     }));

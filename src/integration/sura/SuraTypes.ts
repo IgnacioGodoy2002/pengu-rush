@@ -24,32 +24,39 @@ export type ApiPagination = {
 };
 
 // ─── Integration modes ────────────────────────────────────────────────────────
+//
+// Decided at runtime from window.parent/ReactNativeWebView (SuraRuntimeConfig),
+// never at build time — "sura-mock" doesn't exist anymore, since embedding the
+// game (even in a local dev iframe) is now indistinguishable at runtime from
+// the real host.
 
-export type IntegrationMode = "standalone" | "sura-mock" | "sura";
+export type IntegrationMode = "standalone" | "sura";
 
 // ─── Integration state machine ────────────────────────────────────────────────
 
 export type SuraIntegrationState =
   | "disabled"           // standalone — no bridge, no transitions
-  | "waiting-context"    // sura/mock  — waiting for SURA_MINIGAME_INIT
-  | "validating"         // received INIT, calling validateSession
-  | "ready"              // session valid, waiting for JUGAR
-  | "starting"           // startGameSession called, awaiting response
-  | "playing"            // session started, game running
-  | "completing"         // completeGameSession called, awaiting response
-  | "completed"          // result sent, waiting for new INIT or exit
-  | "unauthorized"       // 401/403 from validateSession or startSession
-  | "error";             // network error or unexpected server failure
+  | "waiting-context"    // sura — waiting for INIT_GAME
+  | "validating"
+  | "ready"              // context received, waiting for JUGAR
+  | "starting"
+  | "playing"
+  | "completing"
+  | "completed"
+  | "unauthorized"
+  | "error";
 
 // ─── Session context ────────────────────────────────────────────────────────
 //
-// gameId is not sent by the host — it's the game's own known SURA_CONFIG.gameId.
-// The host has no concept of playerId in its INIT payload either.
+// Entirely populated from the host's INIT_GAME payload — gameId and
+// apiBaseUrl included, so nothing here depends on how this build was
+// compiled or which environment it's running in.
 
 export type SuraSessionContext = {
   token:      string;
   sessionId:  string;
   gameId:     string;
+  apiBaseUrl: string;
   nickname?:  string;
 };
 
@@ -89,18 +96,15 @@ export type CompletedSession = {
 
 // ─── postMessage event names ──────────────────────────────────────────────────
 //
-// Confirmed against the real host contract in sura-universal
-// (MiniGamePlayerScreen.web.tsx): INIT_GAME is sent as { type, payload }, and
-// the host listens for a completion message that is NOT enveloped — just
-// { type: 'GAME_COMPLETE', sessionId, score, provider } flat on the message.
+// Confirmed against the real host contract in sura-universal.
 // All event strings are centralised here. Do NOT reference raw strings anywhere.
 
 export const SURA_MSG = {
-  // Host (SURA app) → game (iframe)
+  // Host (SURA app) → game (iframe / WebView)
   INIT:             "INIT_GAME",
   PAUSE:            "SURA_MINIGAME_PAUSE",
   RESUME:           "SURA_MINIGAME_RESUME",
-  // Game (iframe) → host (SURA app)
+  // Game (iframe / WebView) → host (SURA app)
   READY:            "MINIGAME_READY",
   SESSION_ACCEPTED: "MINIGAME_SESSION_ACCEPTED",
   STARTED:          "MINIGAME_STARTED",
@@ -123,8 +127,10 @@ export type SuraEnvelope = {
 
 // ─── Inbound payload for INIT_GAME ─────────────────────────────────────────────
 //
-// Matches buildInitMessage() in MiniGamePlayerScreen.web.tsx — camelCase,
-// no player_id/game_id (the host doesn't send them).
+// gameId and apiBaseUrl are what let one build run in every environment
+// (including the native app, which has no build-time host origin to
+// hardcode) — without them the game has no way to know which mini-game UUID
+// or API to call for the leaderboard.
 
 export type InitPayload = {
   token:               string;
@@ -132,6 +138,8 @@ export type InitPayload = {
   username?:           string;
   referral?:           string;
   referredByNickname?: string;
+  gameId?:             string;
+  apiBaseUrl?:         string;
 };
 
 // ─── Events emitted by SuraIntegrationService to scene subscribers ────────────
