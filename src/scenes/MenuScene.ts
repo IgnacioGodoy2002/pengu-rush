@@ -7,7 +7,7 @@ import { SoundEffectsManager } from "../services/SoundEffectsManager";
 import { getSuraService } from "../integration/sura/SuraIntegrationService";
 import type { SuraIntegrationState, SuraServiceEvent } from "../integration/sura/SuraTypes";
 import { t, I18nService } from "../i18n";
-import type { Locale, TranslationKey } from "../i18n";
+import type { Locale } from "../i18n";
 import { fetchLeaderboard } from "../services/LeaderboardService";
 import type { LeaderboardEntry } from "../services/LeaderboardService";
 
@@ -33,23 +33,12 @@ type FadeTarget =
   | Phaser.GameObjects.Text
   | Phaser.GameObjects.Rectangle;
 
-// ─── SURA status translation key per state ────────────────────────────────────
-const SURA_STATUS_KEY: Partial<Record<SuraIntegrationState, TranslationKey>> = {
-  "waiting-context": "sura_waiting",
-  "validating":      "sura_validating",
-  "ready":           "sura_ready",
-  "starting":        "sura_starting",
-  "unauthorized":    "sura_unauthorized",
-  "error":           "sura_error",
-};
-
 export class MenuScene extends Phaser.Scene {
   private isStartingGame = false;
 
   // ── SURA UI refs (null in standalone mode) ────────────────────────────────
   private jugarBg:        Phaser.GameObjects.Rectangle | null = null;
   private jugarText:      Phaser.GameObjects.Text      | null = null;
-  private suraStatusText: Phaser.GameObjects.Text      | null = null;
   private onSuraEvent:    ((event: SuraServiceEvent) => void) | null = null;
 
   constructor() {
@@ -60,7 +49,6 @@ export class MenuScene extends Phaser.Scene {
     this.isStartingGame = false;
     this.jugarBg        = null;
     this.jugarText      = null;
-    this.suraStatusText = null;
     this.onSuraEvent    = null;
 
     const { width, height } = this.scale;
@@ -112,15 +100,6 @@ export class MenuScene extends Phaser.Scene {
       C_COMO_BORD, 0.65, 1.025, 0.75,
       () => this.scene.start("InstructionsScene"),
     );
-
-    // SURA status text (visible only when embedded)
-    this.suraStatusText = this.add
-      .text(cx, jugarY + 66, "", {
-        fontFamily: FONT, fontSize: "19px", color: "#7ec8e3",
-      })
-      .setOrigin(0.5)
-      .setAlpha(0)
-      .setDepth(1);
 
     const { targets: lbTargets, populate } = this.buildLeaderboard(
       cx, top3DivY, top3RowY0, TOP3_SPACING,
@@ -213,22 +192,6 @@ export class MenuScene extends Phaser.Scene {
     }
     if (this.jugarText) {
       this.jugarText.setAlpha(isReady ? 1 : 0.5);
-    }
-
-    // Status label
-    const stateKey = SURA_STATUS_KEY[state];
-    const label = stateKey ? t(stateKey) : "";
-    if (this.suraStatusText) {
-      this.suraStatusText.setText(label);
-      this.suraStatusText.setAlpha(label ? 1 : 0);
-      // Colour: error/unauthorized in red, ready in green, others in cyan
-      if (state === "error" || state === "unauthorized") {
-        this.suraStatusText.setColor("#f87171");
-      } else if (state === "ready") {
-        this.suraStatusText.setColor("#4ade80");
-      } else {
-        this.suraStatusText.setColor("#7ec8e3");
-      }
     }
 
     // If an error happened while in "starting" state, reset guard
