@@ -37,19 +37,21 @@ export class MenuScene extends Phaser.Scene {
   private isStartingGame = false;
 
   // ── SURA UI refs (null in standalone mode) ────────────────────────────────
-  private jugarBg:        Phaser.GameObjects.Rectangle | null = null;
-  private jugarText:      Phaser.GameObjects.Text      | null = null;
-  private onSuraEvent:    ((event: SuraServiceEvent) => void) | null = null;
+  private jugarBg:          Phaser.GameObjects.Rectangle | null = null;
+  private jugarText:        Phaser.GameObjects.Text      | null = null;
+  private onSuraEvent:      ((event: SuraServiceEvent) => void) | null = null;
+  private recordScoreText:  Phaser.GameObjects.Text      | null = null;
 
   constructor() {
     super("MenuScene");
   }
 
   create(): void {
-    this.isStartingGame = false;
-    this.jugarBg        = null;
-    this.jugarText      = null;
-    this.onSuraEvent    = null;
+    this.isStartingGame  = false;
+    this.jugarBg         = null;
+    this.jugarText       = null;
+    this.onSuraEvent     = null;
+    this.recordScoreText = null;
 
     const { width, height } = this.scale;
     const cx      = width / 2;
@@ -86,6 +88,7 @@ export class MenuScene extends Phaser.Scene {
 
     const { bestScore } = RecordsService.load();
     const badge = this.buildBadge(cx, badgeY, bestScore, t("menu_record_label"));
+    this.recordScoreText = badge[2] as Phaser.GameObjects.Text;
 
     const [jugarBg, jugarTxt] = this.buildButton(
       cx, jugarY, 570, 108, t("menu_play"), C_JUGAR, "38px",
@@ -207,6 +210,15 @@ export class MenuScene extends Phaser.Scene {
 
   private applySuraState(state: SuraIntegrationState): void {
     const isReady = state === "ready";
+
+    // Refresh the record badge — handleInit() already reconciled
+    // RecordsService against the account's real best score by the time this
+    // fires (both happen inside the same handleInit call, reconciliation
+    // before the state transition), so re-reading it here picks up a value
+    // that may be higher than what the badge was built with at scene create.
+    if (isReady) {
+      this.recordScoreText?.setText(String(RecordsService.load().bestScore));
+    }
 
     // Enable / disable the JUGAR button
     if (this.jugarBg) {
