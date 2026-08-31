@@ -9,6 +9,7 @@ import {
 } from "./SuraTypes";
 import { SURA_CONFIG } from "./SuraRuntimeConfig";
 import { SuraBridge } from "./SuraBridge";
+import { RecordsService } from "../../services/RecordsService";
 
 // Self-announced in MINIGAME_READY, before the host's INIT_GAME (and its real
 // backend UUID) has arrived. Purely informational on the host's side.
@@ -90,6 +91,11 @@ export class SuraIntegrationService {
   /** Base URL for the (public) leaderboard fetch, from INIT_GAME — null until the handshake completes. */
   getApiBaseUrl(): string | null {
     return this.context?.apiBaseUrl || null;
+  }
+
+  /** The player's real best score for this game, from sura-api — null until the handshake completes. */
+  getBestScore(): number | null {
+    return this.context?.bestScore ?? null;
   }
 
   /**
@@ -252,7 +258,20 @@ export class SuraIntegrationService {
       // The display name to show — may legitimately be empty (player with no
       // nickname). Callers show a generic placeholder, never an invented one.
       nickname:   typeof p.username === "string" ? p.username : undefined,
+      bestScore:  typeof p.bestScore === "number" ? p.bestScore : undefined,
     };
+
+    // Reconcile the local (per-device) record against the account's real
+    // best score. Only ever raises the local value, never lowers it — a
+    // missing/stale/zero remote value (older host not rolled out yet, no
+    // runs for this account yet) must not erase a real local win that
+    // hasn't round-tripped to the backend yet.
+    if (this.context.bestScore !== undefined) {
+      const saved = RecordsService.load();
+      if (this.context.bestScore > saved.bestScore) {
+        RecordsService.save({ ...saved, bestScore: this.context.bestScore });
+      }
+    }
 
     // Acknowledge receipt of the context.
     this.bridge.sendToParent(SURA_MSG.SESSION_ACCEPTED, {
